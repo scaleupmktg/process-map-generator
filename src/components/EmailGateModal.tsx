@@ -19,11 +19,9 @@ export default function EmailGateModal({ open, submitting, error, onSubmit, onCl
   const emailRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (open) {
-      setTouched(false);
-      const id = setTimeout(() => emailRef.current?.focus(), 50);
-      return () => clearTimeout(id);
-    }
+    if (!open) return;
+    const id = setTimeout(() => emailRef.current?.focus(), 50);
+    return () => clearTimeout(id);
   }, [open]);
 
   useEffect(() => {

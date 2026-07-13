@@ -25,7 +25,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const event = typeof body?.event === "string" ? body.event : "";
     if (KNOWN.has(event)) {
-      const { event: _e, ...props } = body;
+      const props: Record<string, unknown> = { ...body };
+      delete props.event;
       track(event as AnalyticsEvent, props);
     }
   } catch {

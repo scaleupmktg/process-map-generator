@@ -55,6 +55,9 @@ export default function ProcessMapApp({
   useEffect(() => {
     trackClient("tool_started");
     try {
+      // Read client-only sessionStorage AFTER hydration; a lazy useState
+      // initializer would diverge from the server render and mismatch.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (sessionStorage.getItem(UNLOCK_KEY)) setUnlocked(true);
     } catch {
       /* sessionStorage unavailable */

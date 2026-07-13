@@ -44,7 +44,6 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
   const g = skill.modeling.geometry;
   const layoutCfg = skill.modeling.layout;
   const labels = skill.modeling.labels;
-  const type = skill.modeling.type;
   const orientation = layoutCfg.pageOrientation;
   const page = g.pages[orientation];
   const gridColumns = Math.max(1, layoutCfg.gridColumns);
