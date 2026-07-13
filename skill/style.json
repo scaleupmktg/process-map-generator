@@ -1,0 +1,42 @@
+{
+  "palette": {
+    "task":       { "fill": "#d5e8d4", "text": "#14351f", "stroke": "#82b366" },
+    "decision":   { "fill": "#ffe6cc", "text": "#663d00", "stroke": "#d79b00" },
+    "startend":   { "fill": "#dae8fc", "text": "#0a2a5e", "stroke": "#6c8ebf" },
+    "document":   { "fill": "#dae8fc", "text": "#0a2a5e", "stroke": "#6c8ebf" },
+    "offpage":    { "fill": "#fff2cc", "text": "#4a3d00", "stroke": "#d6b656" },
+    "laneHeader": { "fill": "#e6e6e6", "text": "#222222", "stroke": "#999999" },
+    "laneBody":   { "fill": "#f7f7f7", "text": "#222222", "stroke": "#999999" },
+    "title":      { "fill": "#f0f0f0", "text": "#222222", "stroke": "#999999" },
+    "legend":     { "fill": "#ffffff", "text": "#333333", "stroke": "#cccccc" },
+    "footer":     { "fill": "none",    "text": "#888888", "stroke": "none" },
+    "edge":       { "fill": "none",    "text": "#333333", "stroke": "#4d4d4d" },
+    "canvas":     { "fill": "#ffffff", "text": "#222222", "stroke": "#999999" }
+  },
+  "shapes": {
+    "task": "rounded=1;whiteSpace=wrap;html=1;",
+    "decision": "rhombus;whiteSpace=wrap;html=1;",
+    "startend": "rounded=1;arcSize=50;whiteSpace=wrap;html=1;",
+    "document": "shape=document;whiteSpace=wrap;html=1;",
+    "offpage": "shape=offPageConnector;whiteSpace=wrap;html=1;"
+  },
+  "laneStyle": "swimlane;html=1;horizontal=0;startSize=32;container=1;collapsible=0;fontStyle=1;",
+  "laneBodyStyle": "rounded=0;html=1;strokeColor=none;pointerEvents=0;",
+  "titleStyle": "rounded=0;whiteSpace=wrap;html=1;fontStyle=1;verticalAlign=middle;",
+  "legendStyle": "text;html=1;align=left;verticalAlign=middle;",
+  "footerStyle": "text;html=1;align=right;verticalAlign=middle;",
+  "edgeStyle": "edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;jettySize=auto;orthogonalLoop=1;",
+  "roleLabels": {
+    "task": "Process / action",
+    "decision": "Decision",
+    "startend": "Start / End",
+    "document": "Document / artifact",
+    "offpage": "Handoff / off-page"
+  },
+  "legendTitle": "Legend",
+  "branding": {
+    "footer": "Mapped with GrowThriveScale · growthrivescale.com",
+    "company": "GrowThriveScale",
+    "site": "growthrivescale.com"
+  }
+}

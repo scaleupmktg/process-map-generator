@@ -1,0 +1,57 @@
+{
+  "caps": {
+    "maxLanes": 5,
+    "maxTasks": 20,
+    "maxDecisions": 6,
+    "maxEndEvents": 3,
+    "minInputChars": 40,
+    "maxInputChars": 6000
+  },
+  "labels": {
+    "maxLabelChars": 60,
+    "maxLabelWords": 10,
+    "maxDecisionChars": 30
+  },
+  "layout": {
+    "gridColumns": 5,
+    "snakeLayout": true,
+    "pageOrientation": "landscape",
+    "showTitle": true,
+    "showLegend": true,
+    "showPhaseHeaders": false,
+    "showStepIdPrefixes": false
+  },
+  "type": {
+    "fontFamily": "Verdana",
+    "minFontPt": 12,
+    "titleFontPt": 15,
+    "smallFontPt": 11
+  },
+  "geometry": {
+    "colWidth": 210,
+    "rowHeight": 128,
+    "taskWidth": 180,
+    "taskHeight": 84,
+    "decisionWidth": 156,
+    "decisionHeight": 88,
+    "startEndWidth": 104,
+    "startEndHeight": 56,
+    "documentWidth": 180,
+    "documentHeight": 84,
+    "offpageWidth": 140,
+    "offpageHeight": 60,
+    "leftMargin": 40,
+    "laneHeaderBand": 32,
+    "colOffset": 50,
+    "rowTopPad": 20,
+    "laneHeightBase": 30,
+    "bannerHeight": 44,
+    "bannerGap": 6,
+    "phaseHeight": 38,
+    "gridSnap": 10,
+    "pages": {
+      "landscape": { "width": 1169, "height": 826 },
+      "portrait": { "width": 826, "height": 1169 }
+    }
+  }
+}

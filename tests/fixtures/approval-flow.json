@@ -1,0 +1,22 @@
+{
+  "processName": "Purchase Requisition Approval",
+  "orgUnit": "Finance",
+  "startEvent": "Start",
+  "lanes": ["Requestor", "Manager", "Finance"],
+  "tasks": [
+    { "id": "T1", "name": "Submit purchase request", "lane": "Requestor", "system": null, "document": "Purchase Request", "next": null },
+    { "id": "T2", "name": "Revise request", "lane": "Requestor", "system": null, "document": null, "next": "T1" },
+    { "id": "T3", "name": "Check budget", "lane": "Finance", "system": "SAP", "document": null, "next": null },
+    { "id": "T4", "name": "Raise purchase order", "lane": "Finance", "system": null, "document": "Purchase Order", "next": "T5" },
+    { "id": "T5", "name": "Notify requestor", "lane": "Finance", "system": null, "document": null, "next": null }
+  ],
+  "decisions": [
+    { "id": "D1", "name": "Manager approves?", "lane": "Manager", "from": "T1", "yes": "T3", "no": "T2" },
+    { "id": "D2", "name": "Budget available?", "lane": "Finance", "from": "T3", "yes": "T4", "no": "E2" }
+  ],
+  "endEvents": [
+    { "id": "E1", "name": "Order raised", "lane": "Requestor", "from": "T5" },
+    { "id": "E2", "name": "Request declined", "lane": "Finance", "from": "D2" }
+  ],
+  "notes": ["Inferred that a revised request re-enters manager approval from the start."]
+}

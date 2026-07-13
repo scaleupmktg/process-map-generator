@@ -1,0 +1,9 @@
+{
+  "name": "process-mapping-drawio",
+  "version": "1.0.0",
+  "schemaVersion": 1,
+  "updated": "2026-07-13",
+  "changelog": [
+    "1.0.0 — initial v1 bundle: CBOK extraction prompt, muted/hybrid palette (green task, amber decision, slate start/end, blue document), caps 5 lanes / 20 tasks / 6 decisions / 6000 chars, A4 landscape snake layout at Verdana 12."
+  ]
+}

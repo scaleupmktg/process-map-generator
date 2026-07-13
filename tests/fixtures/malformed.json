@@ -1,0 +1,16 @@
+{
+  "processName": "Broken Sample Process",
+  "orgUnit": null,
+  "startEvent": "Start",
+  "lanes": ["Clerk", "Approver"],
+  "tasks": [
+    { "id": "T1", "name": "Receive form", "lane": "Clerk", "system": null, "document": "Form", "next": "T2" },
+    { "id": "T2", "name": "Review form", "lane": "Reviewer", "system": null, "document": null, "next": null },
+    { "id": "T3", "name": "File document", "lane": "Clerk", "system": null, "document": null, "next": "T99" }
+  ],
+  "decisions": [
+    { "id": "D1", "name": "Approved?", "lane": "Approver", "from": "T2", "yes": "T3", "no": "T404" }
+  ],
+  "endEvents": [],
+  "notes": []
+}

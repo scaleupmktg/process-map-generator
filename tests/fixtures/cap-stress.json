@@ -1,0 +1,40 @@
+{
+  "processName": "Order to Cash",
+  "orgUnit": "Operations",
+  "startEvent": "Start",
+  "lanes": ["Customer", "Sales", "Warehouse", "Finance", "Support"],
+  "tasks": [
+    { "id": "T1", "name": "Place order", "lane": "Customer", "system": null, "document": "Order Form", "next": "T2" },
+    { "id": "T2", "name": "Acknowledge order", "lane": "Sales", "system": null, "document": null, "next": null },
+    { "id": "T3", "name": "Backorder item", "lane": "Warehouse", "system": null, "document": null, "next": "T4" },
+    { "id": "T4", "name": "Pick items", "lane": "Warehouse", "system": null, "document": null, "next": "T5" },
+    { "id": "T5", "name": "Pack shipment", "lane": "Warehouse", "system": null, "document": null, "next": null },
+    { "id": "T6", "name": "Add protective packaging", "lane": "Warehouse", "system": null, "document": null, "next": "T7" },
+    { "id": "T7", "name": "Generate invoice", "lane": "Finance", "system": "NetSuite", "document": "Invoice", "next": null },
+    { "id": "T8", "name": "Request prepayment", "lane": "Finance", "system": null, "document": null, "next": "T9" },
+    { "id": "T9", "name": "Dispatch shipment", "lane": "Warehouse", "system": null, "document": null, "next": "T10" },
+    { "id": "T10", "name": "Send tracking details", "lane": "Sales", "system": null, "document": null, "next": null },
+    { "id": "T11", "name": "Investigate delivery issue", "lane": "Support", "system": null, "document": null, "next": "T12" },
+    { "id": "T12", "name": "Close order", "lane": "Sales", "system": null, "document": null, "next": null },
+    { "id": "T13", "name": "Send feedback survey", "lane": "Support", "system": null, "document": null, "next": "T14" },
+    { "id": "T14", "name": "Record feedback", "lane": "Support", "system": null, "document": null, "next": null },
+    { "id": "T15", "name": "Create support ticket", "lane": "Support", "system": null, "document": null, "next": "T16" },
+    { "id": "T16", "name": "Resolve issue", "lane": "Support", "system": null, "document": null, "next": "T17" },
+    { "id": "T17", "name": "Confirm resolution", "lane": "Customer", "system": null, "document": null, "next": "T18" },
+    { "id": "T18", "name": "Archive order record", "lane": "Finance", "system": null, "document": null, "next": null }
+  ],
+  "decisions": [
+    { "id": "D1", "name": "Stock available?", "lane": "Warehouse", "from": "T2", "yes": "T4", "no": "T3" },
+    { "id": "D2", "name": "Fragile goods?", "lane": "Warehouse", "from": "T5", "yes": "T6", "no": "T7" },
+    { "id": "D3", "name": "Credit approved?", "lane": "Finance", "from": "T7", "yes": "T9", "no": "T8" },
+    { "id": "D4", "name": "Delivery confirmed?", "lane": "Support", "from": "T10", "yes": "T12", "no": "T11" },
+    { "id": "D5", "name": "Feedback requested?", "lane": "Support", "from": "T12", "yes": "T13", "no": "E1" },
+    { "id": "D6", "name": "Issue reported?", "lane": "Support", "from": "T14", "yes": "T15", "no": "E2" }
+  ],
+  "endEvents": [
+    { "id": "E1", "name": "Order closed", "lane": "Sales", "from": "D5" },
+    { "id": "E2", "name": "Order closed with feedback", "lane": "Support", "from": "D6" },
+    { "id": "E3", "name": "Order archived", "lane": "Finance", "from": "T18" }
+  ],
+  "notes": ["Inferred that Support owns delivery follow-up and feedback; the source did not name the owner."]
+}

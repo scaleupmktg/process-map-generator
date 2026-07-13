@@ -1,0 +1,19 @@
+{
+  "processName": "Employee Onboarding",
+  "orgUnit": "People Operations",
+  "startEvent": "Start",
+  "lanes": ["HR Coordinator", "IT Support"],
+  "tasks": [
+    { "id": "T1", "name": "Send welcome email", "lane": "HR Coordinator", "system": null, "document": null, "next": "T2" },
+    { "id": "T2", "name": "Collect signed documents", "lane": "HR Coordinator", "system": null, "document": "Employment Contract", "next": "T3" },
+    { "id": "T3", "name": "Create user accounts", "lane": "IT Support", "system": "Active Directory", "document": null, "next": "T4" },
+    { "id": "T4", "name": "Provision laptop", "lane": "IT Support", "system": null, "document": null, "next": "T5" },
+    { "id": "T5", "name": "Schedule orientation", "lane": "HR Coordinator", "system": null, "document": null, "next": "T6" },
+    { "id": "T6", "name": "Assign onboarding buddy", "lane": "HR Coordinator", "system": null, "document": null, "next": null }
+  ],
+  "decisions": [],
+  "endEvents": [
+    { "id": "E1", "name": "Onboarding complete", "lane": "HR Coordinator", "from": "T6" }
+  ],
+  "notes": []
+}
