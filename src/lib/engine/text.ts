@@ -7,7 +7,7 @@
  * size (the SVG renderer needs explicit line breaks; draw.io wraps natively).
  */
 
-/** Average glyph advance as a fraction of the font size (Verdana runs wide). */
+/** Average glyph advance as a fraction of the font size (the default face runs wide). */
 const GLYPH_WIDTH_FACTOR = 0.62;
 
 export function estimateTextWidth(text: string, fontPt: number): number {

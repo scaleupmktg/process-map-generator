@@ -6,6 +6,7 @@
     "document":   { "fill": "#dae8fc", "text": "#0a2a5e", "stroke": "#6c8ebf" },
     "offpage":    { "fill": "#fff2cc", "text": "#4a3d00", "stroke": "#d6b656" },
     "laneHeader": { "fill": "#e6e6e6", "text": "#222222", "stroke": "#999999" },
+    "tableHeader": { "fill": "#33475b", "text": "#ffffff", "stroke": "#26374a" },
     "laneBody":   { "fill": "#f7f7f7", "text": "#222222", "stroke": "#999999" },
     "title":      { "fill": "#f0f0f0", "text": "#222222", "stroke": "#999999" },
     "legend":     { "fill": "#ffffff", "text": "#333333", "stroke": "#cccccc" },

@@ -95,6 +95,7 @@ export const StyleSchema = z.object({
       document: ColorTriple,
       offpage: ColorTriple,
       laneHeader: ColorTriple,
+      tableHeader: ColorTriple,
       laneBody: ColorTriple,
       title: ColorTriple,
       legend: ColorTriple,

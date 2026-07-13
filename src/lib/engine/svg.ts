@@ -25,7 +25,7 @@ export function renderSvg(graph: PositionedGraph, skill: SkillBundle): string {
   parts.push(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" ` +
       `width="${W}" height="${H}" role="img" aria-label="${esc(ariaLabel)}" ` +
-      `font-family="${esc(t.fontFamily)}, Arial, sans-serif">`,
+      `font-family="${esc(t.fontFamily)}">`,
   );
   parts.push(
     `<defs><marker id="pmg-arrow" markerWidth="10" markerHeight="10" refX="7.5" refY="3" ` +
