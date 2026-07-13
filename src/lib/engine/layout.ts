@@ -384,9 +384,13 @@ export function layout(model: ProcessModel, skill: SkillBundle): PositionedGraph
     }
 
     // forward
+    if (Math.abs(t.cy - s.cy) < 1) {
+      // same row — connect horizontally from the facing side (handles reversed
+      // snake bands where forward flow runs right-to-left)
+      return t.cx > s.cx ? [sRight, tLeft] : [sLeft, tRight];
+    }
     if (t.cx > s.cx + 1) {
-      // to the right
-      if (Math.abs(t.cy - s.cy) < 1) return [sRight, tLeft];
+      // to the right, different row — elbow
       const midX = (sRight.x + tLeft.x) / 2;
       return [sRight, { x: midX, y: s.cy }, { x: midX, y: t.cy }, tLeft];
     }
@@ -394,7 +398,7 @@ export function layout(model: ProcessModel, skill: SkillBundle): PositionedGraph
       // straight vertical (same column, different lane/row)
       return t.cy > s.cy ? [sBot, tTop] : [sTop, tBot];
     }
-    // forward but to the left (snake wrap) — drop down (or rise) then across
+    // forward but to the left and a different row (snake wrap) — drop then across
     if (t.cy >= s.cy) {
       const midY = (sBot.y + tTop.y) / 2;
       return [sBot, { x: s.cx, y: midY }, { x: t.cx, y: midY }, tTop];
