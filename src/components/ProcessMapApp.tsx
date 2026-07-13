@@ -66,6 +66,9 @@ export default function ProcessMapApp({
     [model, skill],
   );
 
+  // Stamp the skill version on funnel events once we have it (PRD §15).
+  const sv = () => (skill ? { skillVersion: skill.manifest.version } : {});
+
   async function handleGenerate() {
     setError(null);
     setStage("loading");
@@ -78,18 +81,14 @@ export default function ProcessMapApp({
       const json = await res.json();
       if (!res.ok || !json.ok) {
         setError(json?.error ?? "Something went wrong. Please try again.");
-        trackClient("extraction_failed", { code: json?.code });
+        // extraction_succeeded / extraction_failed are tracked server-side
+        // (authoritative, with skillVersion + usedRetry).
         setStage("input");
         return;
       }
       setModel(json.model);
       setSkill(json.skill);
       setStage("result");
-      trackClient("extraction_succeeded", {
-        taskCount: json.model.tasks.length,
-        laneCount: json.model.lanes.length,
-        skillVersion: json.skill?.manifest?.version,
-      });
     } catch {
       setError("We couldn't reach the server. Check your connection and try again.");
       setStage("input");
@@ -115,7 +114,7 @@ export default function ProcessMapApp({
     }
     setPending(kind);
     setGateOpen(true);
-    trackClient("gate_shown");
+    trackClient("gate_shown", sv());
   }
 
   async function doDownload(kind: DownloadKind) {
@@ -124,10 +123,10 @@ export default function ProcessMapApp({
     try {
       if (kind === "drawio") {
         downloadDrawio(model, skill);
-        trackClient("download_drawio", { processName: model.processName });
+        trackClient("download_drawio", { processName: model.processName, ...sv() });
       } else {
         await downloadXlsx(model, skill, bookingUrl);
-        trackClient("download_xlsx", { processName: model.processName });
+        trackClient("download_xlsx", { processName: model.processName, ...sv() });
       }
     } catch {
       setError("The file couldn't be generated. Please try again.");
@@ -158,7 +157,7 @@ export default function ProcessMapApp({
       /* ignore */
     }
     setUnlocked(true);
-    trackClient("lead_captured");
+    // lead_captured is tracked server-side by /api/lead.
     setGateOpen(false);
     setGateSubmitting(false);
     const kind = pending;
@@ -227,7 +226,7 @@ export default function ProcessMapApp({
             )}
           </div>
 
-          <CtaSection bookingUrl={bookingUrl} onClick={() => trackClient("cta_clicked")} />
+          <CtaSection bookingUrl={bookingUrl} onClick={() => trackClient("cta_clicked", sv())} />
         </div>
       )}
 
