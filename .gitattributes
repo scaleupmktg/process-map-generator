@@ -1,0 +1,9 @@
+# Normalize all text to LF in the working tree. This keeps generated-file
+# golden snapshots (.drawio, .svg) byte-identical to what the renderers emit,
+# which are LF, regardless of the OS git is running on.
+* text=auto eol=lf
+
+# Binary assets git should never touch.
+*.ico binary
+*.png binary
+*.xlsx binary
