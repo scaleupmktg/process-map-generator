@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs";
-import type { SkillBundle } from "@/lib/skill/schema";
+import type { ClientSkill } from "@/lib/skill/schema";
 import type { ProcessModel } from "@/lib/model/schema";
 
 /**
@@ -40,7 +40,7 @@ function nextLabel(model: ProcessModel, taskId: string, names: Map<string, strin
 
 export function buildWorkbook(
   model: ProcessModel,
-  skill: SkillBundle,
+  skill: ClientSkill,
   opts: XlsxOptions = {},
 ): ExcelJS.Workbook {
   const names = labelMap(model);
@@ -167,7 +167,7 @@ export function buildWorkbook(
 /** Build the workbook and return an .xlsx byte buffer for download / tests. */
 export async function renderXlsx(
   model: ProcessModel,
-  skill: SkillBundle,
+  skill: ClientSkill,
   opts: XlsxOptions = {},
 ): Promise<ArrayBuffer> {
   const wb = buildWorkbook(model, skill, opts);

@@ -1,4 +1,4 @@
-import type { SkillBundle, NodeKind } from "@/lib/skill/schema";
+import type { ClientSkill, NodeKind } from "@/lib/skill/schema";
 import type { LayoutNode, PositionedGraph } from "./types";
 import { esc, num } from "./style";
 import { wrapText, truncateLabel } from "./text";
@@ -9,7 +9,7 @@ import { wrapText, truncateLabel } from "./text";
  * construction (PRD §8). The SVG is inert (no scripts), so LLM-derived labels
  * can't execute; the extraction summary panel is its text alternative.
  */
-export function renderSvg(graph: PositionedGraph, skill: SkillBundle): string {
+export function renderSvg(graph: PositionedGraph, skill: ClientSkill): string {
   const { style, modeling } = skill;
   const t = modeling.type;
   const g = modeling.geometry;
@@ -152,7 +152,7 @@ function shapeFor(n: LayoutNode, kind: NodeKind, fill: string, stroke: string): 
   )}" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`;
 }
 
-function renderNode(n: LayoutNode, skill: SkillBundle): string {
+function renderNode(n: LayoutNode, skill: ClientSkill): string {
   const { style, modeling } = skill;
   const t = modeling.type;
   const c = style.palette[n.kind];

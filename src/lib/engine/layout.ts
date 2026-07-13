@@ -1,4 +1,4 @@
-import type { SkillBundle, NodeKind } from "@/lib/skill/schema";
+import type { ClientSkill, NodeKind } from "@/lib/skill/schema";
 import type { ProcessModel } from "@/lib/model/schema";
 import { truncateLabel } from "./text";
 import type {
@@ -40,7 +40,7 @@ type NodeInfo = {
 const RIGHT_MARGIN = 40;
 const CHANNEL_GAP = 22; // vertical clearance for loop-back / wrap routing
 
-export function layout(model: ProcessModel, skill: SkillBundle): PositionedGraph {
+export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph {
   const g = skill.modeling.geometry;
   const layoutCfg = skill.modeling.layout;
   const labels = skill.modeling.labels;

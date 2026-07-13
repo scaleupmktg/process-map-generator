@@ -1,4 +1,4 @@
-import type { SkillBundle } from "@/lib/skill/schema";
+import type { ClientSkill } from "@/lib/skill/schema";
 import type { LayoutNode, PositionedGraph } from "./types";
 import { esc, num, clamp01, drawioNodeStyle } from "./style";
 
@@ -16,7 +16,7 @@ import { esc, num, clamp01, drawioNodeStyle } from "./style";
  */
 export function renderDrawio(
   graph: PositionedGraph,
-  skill: SkillBundle,
+  skill: ClientSkill,
   opts: { generatedAt?: string } = {},
 ): string {
   const { style, modeling, manifest } = skill;

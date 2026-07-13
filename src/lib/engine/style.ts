@@ -1,4 +1,4 @@
-import type { SkillBundle, NodeKind } from "@/lib/skill/schema";
+import type { ClientSkill, NodeKind } from "@/lib/skill/schema";
 
 /** XML/SVG-safe escaping for attribute and text content. */
 export function esc(value: string): string {
@@ -20,7 +20,7 @@ export function clamp01(n: number): number {
 }
 
 /** Compose the full mxGraph style string for a node kind from the skill bundle. */
-export function drawioNodeStyle(kind: NodeKind, skill: SkillBundle): string {
+export function drawioNodeStyle(kind: NodeKind, skill: ClientSkill): string {
   const { style, modeling } = skill;
   const c = style.palette[kind];
   const t = modeling.type;
