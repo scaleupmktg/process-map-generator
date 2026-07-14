@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { loadBundledSkill } from "@/lib/skill/load";
-import { layout } from "@/lib/engine/layout";
+import { layoutPages } from "@/lib/engine/layout";
 import { renderDrawio } from "@/lib/engine/drawio";
 import { renderSvg } from "@/lib/engine/svg";
 import { validateDrawio } from "@/lib/engine/validateDrawio";
@@ -14,7 +14,7 @@ import type { ProcessModel } from "@/lib/model/schema";
  * changes these snapshots; an engine change must leave them byte-identical.
  * Regenerate with:  UPDATE_GOLDENS=1 npx vitest run tests/golden.test.ts
  */
-const FIXTURES = ["linear-onboarding", "approval-flow", "cap-stress"];
+const FIXTURES = ["linear-onboarding", "approval-flow", "cap-stress", "xpr-phased"];
 const GOLDEN_DIR = path.join(process.cwd(), "tests", "golden");
 const FIX_DIR = path.join(process.cwd(), "tests", "fixtures");
 const UPDATE = process.env.UPDATE_GOLDENS === "1";
@@ -28,8 +28,10 @@ function build(name: string): { drawio: string; svg: string } {
   const model = JSON.parse(
     readFileSync(path.join(FIX_DIR, `${name}.json`), "utf8"),
   ) as ProcessModel;
-  const graph = layout(model, skill);
-  return { drawio: renderDrawio(graph, skill), svg: renderSvg(graph, skill) };
+  // Production path: a single page for most models, an overview + per-phase pages
+  // (drawio tabs) for a decomposed one. The svg golden captures the first page.
+  const pages = layoutPages(model, skill);
+  return { drawio: renderDrawio(pages, skill), svg: renderSvg(pages[0], skill) };
 }
 
 describe("golden files", () => {
