@@ -44,15 +44,19 @@ function realLLM(apiKey: string): LLM {
   const client = new Anthropic({ apiKey });
   const model = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL;
   return async (system, user) => {
-    const res = await client.messages.create({
-      model,
-      max_tokens: MAX_TOKENS,
-      // temperature is intentionally omitted: the newest models (Sonnet 5,
-      // Opus 4.8, …) deprecate it, and JSON-only + schema validation give us the
-      // determinism we need without it.
-      system,
-      messages: [{ role: "user", content: user }],
-    });
+    // Stream and collect the final message: the SDK requires streaming for
+    // requests whose max_tokens could run past 10 minutes (Sonnet + a large
+    // budget), and it avoids idle-connection timeouts. temperature is omitted —
+    // the newest models deprecate it; JSON-only + schema validation give us the
+    // determinism we need without it.
+    const res = await client.messages
+      .stream({
+        model,
+        max_tokens: MAX_TOKENS,
+        system,
+        messages: [{ role: "user", content: user }],
+      })
+      .finalMessage();
     const out = res.content
       .filter((b): b is Anthropic.TextBlock => b.type === "text")
       .map((b) => b.text)
