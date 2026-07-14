@@ -45,6 +45,7 @@ export default function ProcessMapApp({
   const [skill, setSkill] = useState<ClientSkill | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploadNote, setUploadNote] = useState<string | null>(null);
+  const [isMock, setIsMock] = useState(false);
 
   const [unlocked, setUnlocked] = useState(false);
   const [gateOpen, setGateOpen] = useState(false);
@@ -91,6 +92,7 @@ export default function ProcessMapApp({
       }
       setModel(json.model);
       setSkill(json.skill);
+      setIsMock(Boolean(json.mock));
       setStage("result");
     } catch {
       setError("We couldn't reach the server. Check your connection and try again.");
@@ -204,6 +206,13 @@ export default function ProcessMapApp({
 
       {stage === "result" && model && preview && (
         <div className="flex flex-col gap-8">
+          {isMock && (
+            <Banner tone="error">
+              <strong>Demo mode — this is not a real extraction.</strong> No{" "}
+              <code>ANTHROPIC_API_KEY</code> is set, so the offline mock just split your text
+              into steps. Set a key to map your process with Claude.
+            </Banner>
+          )}
           {showBigProcessNote && (
             <Banner tone="info">
               Your process is bigger than this free tool handles — we mapped the core flow. The

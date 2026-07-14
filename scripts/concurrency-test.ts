@@ -28,7 +28,7 @@ async function runBatch(label: string): Promise<boolean> {
     Array.from({ length: N }, async (_, i) => {
       const res = await POST(makeRequest(i));
       const json = await res.json();
-      return { i, status: res.status, name: json?.model?.processName ?? "" };
+      return { i, status: res.status, name: json?.model?.tasks?.[0]?.name ?? "" };
     }),
   );
   const bad = results.filter((r) => r.status !== 200);
@@ -48,6 +48,7 @@ async function runBatch(label: string): Promise<boolean> {
 async function main() {
   const savedKey = process.env.ANTHROPIC_API_KEY;
   delete process.env.ANTHROPIC_API_KEY;
+  process.env.PMG_MOCK_EXTRACT = "1"; // opt into the offline mock
   const mockOk = await runBatch("mock");
   if (savedKey) process.env.ANTHROPIC_API_KEY = savedKey;
 

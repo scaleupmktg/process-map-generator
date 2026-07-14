@@ -9,12 +9,16 @@ import { __resetRateLimit } from "@/lib/ratelimit";
  * state, so this must hold by construction.
  */
 const savedKey = process.env.ANTHROPIC_API_KEY;
+const savedMock = process.env.PMG_MOCK_EXTRACT;
 beforeEach(() => {
   delete process.env.ANTHROPIC_API_KEY; // force the deterministic offline mock
+  process.env.PMG_MOCK_EXTRACT = "1";
   __resetRateLimit();
 });
 afterAll(() => {
   if (savedKey !== undefined) process.env.ANTHROPIC_API_KEY = savedKey;
+  if (savedMock !== undefined) process.env.PMG_MOCK_EXTRACT = savedMock;
+  else delete process.env.PMG_MOCK_EXTRACT;
 });
 
 it("50 parallel extractions: no cross-contamination, no 5xx", async () => {
@@ -44,11 +48,11 @@ it("50 parallel extractions: no cross-contamination, no 5xx", async () => {
   for (const r of results) {
     expect(r.status, `request ${r.i} status`).toBe(200);
     expect(r.json.ok).toBe(true);
-    // The mock derives processName from the input; each must echo its own marker.
-    expect(r.json.model.processName).toContain(`Process number ${r.i} zeta${r.i}`);
+    // The mock derives task names from the input; each must echo its own marker.
+    expect(r.json.model.tasks[0].name).toContain(`Process number ${r.i} zeta${r.i}`);
   }
 
   // Every response is unique — nothing leaked between concurrent invocations.
-  const names = new Set(results.map((r) => r.json.model.processName));
+  const names = new Set(results.map((r) => r.json.model.tasks[0].name));
   expect(names.size).toBe(N);
 });

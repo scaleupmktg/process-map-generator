@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterEach } from "vitest";
 import { loadBundledSkill } from "@/lib/skill/load";
 import {
   buildSystemPrompt,
@@ -10,12 +10,40 @@ import {
   validateInputLength,
   ExtractionError,
 } from "@/lib/extract/extract";
-import { mockLLM, type LLM } from "@/lib/extract/llm";
+import { mockLLM, createLLM, NoModelError, type LLM } from "@/lib/extract/llm";
 import type { SkillBundle } from "@/lib/skill/schema";
 
 let skill: SkillBundle;
 beforeAll(async () => {
   skill = await loadBundledSkill();
+});
+
+describe("createLLM — backend selection", () => {
+  const key = process.env.ANTHROPIC_API_KEY;
+  const mock = process.env.PMG_MOCK_EXTRACT;
+  afterEach(() => {
+    if (key !== undefined) process.env.ANTHROPIC_API_KEY = key;
+    else delete process.env.ANTHROPIC_API_KEY;
+    if (mock !== undefined) process.env.PMG_MOCK_EXTRACT = mock;
+    else delete process.env.PMG_MOCK_EXTRACT;
+  });
+
+  it("throws NoModelError with no key and no opt-in (no silent garbage)", () => {
+    delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.PMG_MOCK_EXTRACT;
+    expect(() => createLLM(skill)).toThrow(NoModelError);
+  });
+
+  it("uses the mock only when explicitly opted in, and flags it", () => {
+    delete process.env.ANTHROPIC_API_KEY;
+    process.env.PMG_MOCK_EXTRACT = "1";
+    expect(createLLM(skill).isMock).toBe(true);
+  });
+
+  it("uses the real backend (not mock) when a key is present", () => {
+    process.env.ANTHROPIC_API_KEY = "sk-test";
+    expect(createLLM(skill).isMock).toBe(false);
+  });
 });
 
 describe("prompt interpolation", () => {
@@ -101,7 +129,7 @@ describe("extractProcessModel — validate + retry-once", () => {
   it("the mock derives distinct output per input (concurrency safety)", async () => {
     const a = await extractProcessModel("Alpha process. Step one. Step two.", skill, mockLLM(skill));
     const b = await extractProcessModel("Beta workflow. Do X. Do Y.", skill, mockLLM(skill));
-    expect(a.model.processName).not.toBe(b.model.processName);
+    expect(a.model.tasks[0].name).not.toBe(b.model.tasks[0].name);
   });
 });
 

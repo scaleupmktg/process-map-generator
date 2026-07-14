@@ -2,14 +2,19 @@ import { describe, it, expect, beforeEach, afterAll } from "vitest";
 import { POST } from "@/app/api/extract/route";
 import { __resetRateLimit } from "@/lib/ratelimit";
 
-/** Force the offline mock even if the dev shell has a real key set. */
+/** Force the opt-in offline mock even if the dev shell has a real key set. */
 const savedKey = process.env.ANTHROPIC_API_KEY;
+const savedMock = process.env.PMG_MOCK_EXTRACT;
 beforeEach(() => {
   delete process.env.ANTHROPIC_API_KEY;
+  process.env.PMG_MOCK_EXTRACT = "1";
   __resetRateLimit();
 });
 afterAll(() => {
   if (savedKey !== undefined) process.env.ANTHROPIC_API_KEY = savedKey;
+  else delete process.env.ANTHROPIC_API_KEY;
+  if (savedMock !== undefined) process.env.PMG_MOCK_EXTRACT = savedMock;
+  else delete process.env.PMG_MOCK_EXTRACT;
 });
 
 function makeReq(text: string, ip = "1.2.3.4"): Request {
@@ -34,6 +39,19 @@ describe("POST /api/extract", () => {
     expect(json.skill.modeling).toBeDefined();
     expect(json.skill.style).toBeDefined();
     expect(json.skill.extraction).toBeUndefined(); // server prompt not leaked
+  });
+
+  it("503 NO_MODEL when no key is set and the mock is not opted in", async () => {
+    delete process.env.PMG_MOCK_EXTRACT;
+    const res = await POST(makeReq(GOOD, "10.0.0.7"));
+    expect(res.status).toBe(503);
+    expect((await res.json()).code).toBe("NO_MODEL");
+  });
+
+  it("flags mock responses so the UI can warn", async () => {
+    const res = await POST(makeReq(GOOD, "10.0.0.8"));
+    expect(res.status).toBe(200);
+    expect((await res.json()).mock).toBe(true);
   });
 
   it("400 TOO_SHORT for tiny input", async () => {

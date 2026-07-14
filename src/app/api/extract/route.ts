@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { loadSkill } from "@/lib/skill/load";
 import { toClientSkill, type SkillBundle } from "@/lib/skill/schema";
-import { createLLM } from "@/lib/extract/llm";
+import { createLLM, NoModelError } from "@/lib/extract/llm";
 import {
   extractProcessModel,
   validateInputLength,
@@ -15,7 +15,12 @@ import { track } from "@/lib/analytics";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type ErrorCode = ExtractionCode | "RATE_LIMITED" | "BAD_REQUEST" | "SERVER_ERROR";
+type ErrorCode =
+  | ExtractionCode
+  | "RATE_LIMITED"
+  | "BAD_REQUEST"
+  | "NO_MODEL"
+  | "SERVER_ERROR";
 
 /** User-facing copy (PRD §11). Any limit is interpolated from the skill. */
 function userMessage(code: ErrorCode, skill: SkillBundle | null): string {
@@ -31,6 +36,8 @@ function userMessage(code: ErrorCode, skill: SkillBundle | null): string {
       return "We couldn't find a clear sequence of steps. Try describing it as: who does what, in what order, and where the decisions are.";
     case "BAD_REQUEST":
       return "Send a process description as { text }.";
+    case "NO_MODEL":
+      return "No AI model is configured, so extraction is unavailable. Set ANTHROPIC_API_KEY to generate real maps (or PMG_MOCK_EXTRACT=1 for an offline demo).";
     default:
       return "Something went wrong on our side. Please try again.";
   }
@@ -78,7 +85,7 @@ export async function POST(req: Request) {
     }
 
     // 5. Extract (retry-once inside) then auto-repair.
-    const llm = createLLM(skill);
+    const { llm, isMock } = createLLM(skill);
     const { model, usedRetry } = await extractProcessModel(text, skill, llm);
     const repaired = repairModel(model);
 
@@ -87,11 +94,21 @@ export async function POST(req: Request) {
       laneCount: repaired.lanes.length,
       decisionCount: repaired.decisions.length,
       usedRetry,
+      mock: isMock,
       skillVersion: skill.manifest.version,
     });
 
-    return NextResponse.json({ ok: true, model: repaired, skill: toClientSkill(skill) });
+    return NextResponse.json({
+      ok: true,
+      model: repaired,
+      skill: toClientSkill(skill),
+      mock: isMock,
+    });
   } catch (e) {
+    if (e instanceof NoModelError) {
+      track("extraction_failed", { code: "NO_MODEL", skillVersion: skill?.manifest.version });
+      return fail("NO_MODEL", 503, skill);
+    }
     if (e instanceof ExtractionError) {
       track("extraction_failed", {
         code: e.code,

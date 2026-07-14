@@ -112,6 +112,17 @@ describe("ProcessMapApp — full flow", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  it("shows a loud demo banner when the response is from the mock", async () => {
+    fetchMock.mockImplementation(async (url: string) =>
+      String(url).includes("/api/extract")
+        ? json({ ok: true, model, skill: clientSkill, mock: true })
+        : json({ ok: true }),
+    );
+    renderApp();
+    await generate();
+    expect(screen.getByText(/not a real extraction/i)).toBeTruthy();
+  });
+
   it("surfaces a server error and stays on the input screen", async () => {
     fetchMock.mockImplementation(async (url: string) =>
       String(url).includes("/api/extract")
