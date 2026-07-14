@@ -87,7 +87,7 @@ export async function POST(req: Request) {
     // 5. Extract (retry-once inside) then auto-repair.
     const { llm, isMock } = createLLM(skill);
     const { model, usedRetry } = await extractProcessModel(text, skill, llm);
-    const repaired = repairModel(model);
+    const repaired = repairModel(model, { maxPhases: skill.modeling.caps.maxPhases });
 
     track("extraction_succeeded", {
       taskCount: repaired.tasks.length,

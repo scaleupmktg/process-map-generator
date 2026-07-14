@@ -45,6 +45,19 @@ export const EndEventSchema = z.object({
 });
 export type EndEvent = z.infer<typeof EndEventSchema>;
 
+/**
+ * Optional phase grouping (for multi-page sub-process decomposition). Ordered;
+ * each phase owns the ids of the tasks in it. Decisions/end events inherit the
+ * phase of the task they flow from. Enrichment only — a model with no phases (or
+ * one phase) renders as a single page, exactly as before.
+ */
+export const PhaseSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().trim().min(1),
+  taskIds: z.array(z.string().min(1)).default([]),
+});
+export type Phase = z.infer<typeof PhaseSchema>;
+
 /** Static schema (permissive caps) used purely to derive the TS type. */
 export const ProcessModelSchema = z.object({
   processName: z.string().trim().min(1),
@@ -54,6 +67,7 @@ export const ProcessModelSchema = z.object({
   tasks: z.array(TaskSchema),
   decisions: z.array(DecisionSchema),
   endEvents: z.array(EndEventSchema),
+  phases: z.array(PhaseSchema).catch([]),
   notes: z.array(z.string()).catch([]),
 });
 export type ProcessModel = z.infer<typeof ProcessModelSchema>;
@@ -74,6 +88,9 @@ export function makeProcessModelSchema(modeling: Modeling) {
       decisions: z.array(DecisionSchema).max(caps.maxDecisions),
       // Lenient min: repair synthesises an end event if there are none.
       endEvents: z.array(EndEventSchema).max(caps.maxEndEvents),
+      // Phases are best-effort enrichment — never fail extraction over them;
+      // repair normalises and trims to maxPhases.
+      phases: z.array(PhaseSchema).catch([]),
       notes: z.array(z.string()).catch([]),
     })
     .superRefine((model, ctx) => {

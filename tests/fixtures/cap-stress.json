@@ -36,5 +36,6 @@
     { "id": "E2", "name": "Order closed with feedback", "lane": "Support", "from": "D6" },
     { "id": "E3", "name": "Order archived", "lane": "Finance", "from": "T18" }
   ],
+  "phases": [],
   "notes": ["Inferred that Support owns delivery follow-up and feedback; the source did not name the owner."]
 }

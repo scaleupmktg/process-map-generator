@@ -14,8 +14,12 @@ import type { ProcessModel } from "./schema";
  * Every repair appends a plain-language line to notes[] so nothing is silent to
  * anyone reading the register.
  */
-export function repairModel(input: ProcessModel): ProcessModel {
+export function repairModel(
+  input: ProcessModel,
+  opts: { maxPhases?: number } = {},
+): ProcessModel {
   const model: ProcessModel = structuredClone(input);
+  model.phases ??= []; // tolerate models parsed without the optional field
   const notes: string[] = [...model.notes];
   const laneSet = new Set(model.lanes);
   const firstLane = model.lanes[0];
@@ -96,6 +100,42 @@ export function repairModel(input: ProcessModel): ProcessModel {
       firstEnd.from = anchor;
       notes.push("Connected the flow to an end event so the map is complete.");
     }
+  }
+
+  // ---- 5. normalise optional phases (multi-page decomposition) -------------
+  // Best-effort: keep only real task ids (first phase to claim a task wins),
+  // give every task a phase, drop empties, trim to maxPhases, and collapse a
+  // lone phase to "unphased" (nothing to decompose).
+  if (model.phases.length > 0) {
+    const taskIds = new Set(model.tasks.map((t) => t.id));
+    const claimed = new Set<string>();
+    for (const ph of model.phases) {
+      ph.taskIds = ph.taskIds.filter((id) => taskIds.has(id) && !claimed.has(id));
+      ph.taskIds.forEach((id) => claimed.add(id));
+    }
+    const phaseOf = new Map<string, string>();
+    for (const ph of model.phases) for (const id of ph.taskIds) phaseOf.set(id, ph.id);
+    if (phaseOf.size > 0) {
+      let last = model.phases.find((p) => p.taskIds.length > 0)!.id;
+      for (const t of model.tasks) {
+        if (phaseOf.has(t.id)) {
+          last = phaseOf.get(t.id)!;
+        } else {
+          model.phases.find((p) => p.id === last)!.taskIds.push(t.id);
+          phaseOf.set(t.id, last);
+        }
+      }
+    }
+    model.phases = model.phases.filter((p) => p.taskIds.length > 0);
+    const maxPhases = opts.maxPhases ?? model.phases.length;
+    if (model.phases.length > maxPhases) {
+      const kept = model.phases.slice(0, maxPhases);
+      for (const ph of model.phases.slice(maxPhases)) {
+        kept[kept.length - 1].taskIds.push(...ph.taskIds);
+      }
+      model.phases = kept;
+    }
+    if (model.phases.length < 2) model.phases = [];
   }
 
   model.notes = notes;

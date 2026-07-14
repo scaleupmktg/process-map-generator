@@ -49,6 +49,17 @@ and return a single structured JSON object modelling it as a swimlane flow.
   such as: "Mapped the core flow; the fuller process (X, Y, Z) needs sub-process
   decomposition." Truncating to the core path is expected behaviour, not failure.
 
+## Phases (optional grouping — strongly preferred for big processes)
+
+If the process has natural sequential stages — numbered sections, or clear phases
+like "Request → Approval → Fulfilment → Payment" — group the tasks into **2 to
+{{maxPhases}} phases** and return them in `phases[]`, in order. Each phase lists
+the ids of the tasks it contains (`taskIds`); together the phases should cover
+every task exactly once. Decisions and end events are NOT tagged — they follow
+the task they branch from. If the process is short or has no clear stages, return
+an empty `phases[]`. Phasing lets a large process be split across readable pages,
+so prefer it whenever the process has more than ~12 steps or more than 5 lanes.
+
 ## Output contract
 
 Output **JSON only** — no prose, no explanation, no markdown code fences. The
@@ -88,6 +99,13 @@ object must match exactly this shape:
       "from": string                  // id of the task/decision leading here
     }
   ],                                   // 1..{{maxEndEvents}} end events
+  "phases": [
+    {
+      "id": "P1",
+      "name": string,                 // e.g. "Expense Request"
+      "taskIds": string[]             // ids of the tasks in this phase, in order
+    }
+  ],                                   // 0, or 2..{{maxPhases}} phases, in order
   "notes": string[]                    // inferences, assumptions, truncations
 }
 ```

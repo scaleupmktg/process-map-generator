@@ -18,5 +18,6 @@
     { "id": "E1", "name": "Order raised", "lane": "Requestor", "from": "T5" },
     { "id": "E2", "name": "Request declined", "lane": "Finance", "from": "D2" }
   ],
+  "phases": [],
   "notes": ["Inferred that a revised request re-enters manager approval from the start."]
 }

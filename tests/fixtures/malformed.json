@@ -12,5 +12,6 @@
     { "id": "D1", "name": "Approved?", "lane": "Approver", "from": "T2", "yes": "T3", "no": "T404" }
   ],
   "endEvents": [],
+  "phases": [],
   "notes": []
 }

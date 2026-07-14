@@ -4,6 +4,7 @@
     "maxTasks": 35,
     "maxDecisions": 12,
     "maxEndEvents": 5,
+    "maxPhases": 8,
     "minInputChars": 40,
     "maxInputChars": 6000
   },
@@ -19,7 +20,8 @@
     "showTitle": true,
     "showLegend": true,
     "showPhaseHeaders": false,
-    "showStepIdPrefixes": false
+    "showStepIdPrefixes": false,
+    "decomposePages": true
   },
   "type": {
     "fontFamily": "Verdana",

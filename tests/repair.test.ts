@@ -84,3 +84,47 @@ describe("repairModel — targeted cases", () => {
     expect(repaired.notes.length).toBe(load("approval-flow").notes.length);
   });
 });
+
+describe("repairModel — phase normalisation", () => {
+  const base = () => {
+    const m = load("linear-onboarding");
+    return m;
+  };
+
+  it("drops unknown/duplicate task ids and assigns untagged tasks", () => {
+    const m = base();
+    m.phases = [
+      { id: "P1", name: "Setup", taskIds: ["T1", "T2", "GHOST"] },
+      { id: "P2", name: "Provision", taskIds: ["T3", "T1"] }, // T1 dup, T5/T6 untagged
+    ];
+    const r = repairModel(m, { maxPhases: 8 });
+    const claimed = r.phases.flatMap((p) => p.taskIds);
+    expect(claimed).not.toContain("GHOST");
+    expect(claimed.filter((id) => id === "T1")).toHaveLength(1); // dedup
+    // every task landed in exactly one phase
+    expect([...claimed].sort()).toEqual(["T1", "T2", "T3", "T4", "T5", "T6"]);
+  });
+
+  it("collapses a single phase to unphased (nothing to decompose)", () => {
+    const m = base();
+    m.phases = [{ id: "P1", name: "All", taskIds: ["T1", "T2", "T3"] }];
+    expect(repairModel(m).phases).toEqual([]);
+  });
+
+  it("trims to maxPhases by merging overflow into the last kept phase", () => {
+    const m = base();
+    m.phases = [
+      { id: "P1", name: "A", taskIds: ["T1"] },
+      { id: "P2", name: "B", taskIds: ["T2"] },
+      { id: "P3", name: "C", taskIds: ["T3"] },
+      { id: "P4", name: "D", taskIds: ["T4", "T5", "T6"] },
+    ];
+    const r = repairModel(m, { maxPhases: 2 });
+    expect(r.phases).toHaveLength(2);
+    expect(r.phases[1].taskIds).toEqual(expect.arrayContaining(["T2", "T3", "T4"]));
+  });
+
+  it("ignores phases entirely when absent (single-page path)", () => {
+    expect(repairModel(base()).phases).toEqual([]);
+  });
+});

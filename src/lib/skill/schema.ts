@@ -33,6 +33,7 @@ export const ModelingSchema = z.object({
     maxTasks: z.number().int().positive(),
     maxDecisions: z.number().int().nonnegative(),
     maxEndEvents: z.number().int().positive(),
+    maxPhases: z.number().int().positive(),
     minInputChars: z.number().int().nonnegative(),
     maxInputChars: z.number().int().positive(),
   }),
@@ -49,6 +50,9 @@ export const ModelingSchema = z.object({
     showLegend: z.boolean(),
     showPhaseHeaders: z.boolean(),
     showStepIdPrefixes: z.boolean(),
+    // When true, a phased model that overflows one page is split into an
+    // overview page + one page per phase (multi-page .drawio).
+    decomposePages: z.boolean(),
   }),
   type: z.object({
     fontFamily: z.string().min(1),

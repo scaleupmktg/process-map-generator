@@ -15,6 +15,7 @@ export function buildSystemPrompt(skill: SkillBundle): string {
     maxTasks: caps.maxTasks,
     maxDecisions: caps.maxDecisions,
     maxEndEvents: caps.maxEndEvents,
+    maxPhases: caps.maxPhases,
     maxLabelChars: labels.maxLabelChars,
     maxLabelWords: labels.maxLabelWords,
     maxDecisionChars: labels.maxDecisionChars,

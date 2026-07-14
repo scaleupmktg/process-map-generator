@@ -15,5 +15,6 @@
   "endEvents": [
     { "id": "E1", "name": "Onboarding complete", "lane": "HR Coordinator", "from": "T6" }
   ],
+  "phases": [],
   "notes": []
 }
