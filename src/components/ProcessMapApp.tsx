@@ -65,7 +65,7 @@ export default function ProcessMapApp({
     }
   }, []);
 
-  const preview = useMemo(
+  const pages = useMemo(
     () => (model && skill ? buildPreview(model, skill) : null),
     [model, skill],
   );
@@ -170,7 +170,11 @@ export default function ProcessMapApp({
     if (kind) void doDownload(kind);
   }
 
-  const showBigProcessNote = (preview?.graph.fitWarnings.length ?? 0) > 0;
+  const isMultiPage = (pages?.length ?? 0) > 1;
+  // Only the "bigger than this tool" note when a single page still overflows;
+  // a decomposed multi-page map is a success, not a truncation.
+  const showBigProcessNote =
+    !isMultiPage && (pages?.[0]?.fitWarnings.length ?? 0) > 0;
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:py-12">
@@ -204,7 +208,7 @@ export default function ProcessMapApp({
 
       {stage === "loading" && <ProgressStages />}
 
-      {stage === "result" && model && preview && (
+      {stage === "result" && model && pages && (
         <div className="flex flex-col gap-8">
           {isMock && (
             <Banner tone="error">
@@ -219,10 +223,16 @@ export default function ProcessMapApp({
               full picture usually needs sub-process decomposition.
             </Banner>
           )}
+          {isMultiPage && (
+            <Banner tone="info">
+              This process was large, so we split it across {pages.length} pages — an overview
+              plus one page per phase. The downloaded .drawio has a tab for each.
+            </Banner>
+          )}
 
           <div className="grid grid-cols-1 gap-8 min-[900px]:grid-cols-2">
             <SummaryPanel model={model} onEdit={() => setStage("input")} />
-            <PreviewPane dataUri={preview.dataUri} processName={model.processName} />
+            <PreviewPane pages={pages} processName={model.processName} />
           </div>
 
           <div className="flex flex-col gap-3">

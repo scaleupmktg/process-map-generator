@@ -1,5 +1,5 @@
 import type { ClientSkill } from "@/lib/skill/schema";
-import type { LayoutNode, PositionedGraph } from "./types";
+import type { LayoutNode, PositionedGraph, Page } from "./types";
 import { esc, num, clamp01, drawioNodeStyle } from "./style";
 
 /**
@@ -15,14 +15,25 @@ import { esc, num, clamp01, drawioNodeStyle } from "./style";
  *  - the skill version is stamped into the footer text and an <mxfile> attribute
  */
 export function renderDrawio(
-  graph: PositionedGraph,
+  input: PositionedGraph | PositionedGraph[],
   skill: ClientSkill,
   opts: { generatedAt?: string } = {},
 ): string {
-  const { style, modeling, manifest } = skill;
+  const pages = Array.isArray(input) ? input : [input];
+  const generatedAt = opts.generatedAt ?? skill.manifest.updated;
+  const diagrams = pages.map((p) => renderDiagram(p, skill)).join("");
+  return (
+    `<mxfile host="app.diagrams.net" modified="${esc(generatedAt)}" ` +
+    `agent="GrowThriveScale Process Map Generator" type="device" ` +
+    `data-skill-version="${esc(skill.manifest.version)}">${diagrams}</mxfile>`
+  );
+}
+
+/** Serialise one positioned page to an <diagram> element. */
+function renderDiagram(graph: PositionedGraph, skill: ClientSkill): string {
+  const { style, modeling } = skill;
   const t = modeling.type;
   const g = modeling.geometry;
-  const generatedAt = opts.generatedAt ?? manifest.updated;
 
   const nodeById = new Map(graph.nodes.map((n) => [n.id, n]));
   const cells: string[] = ['<mxCell id="0"/>', '<mxCell id="1" parent="0"/>'];
@@ -191,7 +202,7 @@ export function renderDrawio(
   cells.push(
     vertex(
       "footer",
-      `${graph.footer.text} · v${manifest.version}`,
+      `${graph.footer.text} · v${skill.manifest.version}`,
       `${style.footerStyle}fontFamily=${t.fontFamily};fontSize=${t.smallFontPt};fontColor=${footerColor.text};`,
       "1",
       graph.footer.x,
@@ -208,12 +219,8 @@ export function renderDrawio(
       graph.page.height,
     )}" math="0" shadow="0"><root>${cells.join("")}</root></mxGraphModel>`;
 
-  return (
-    `<mxfile host="app.diagrams.net" modified="${esc(generatedAt)}" ` +
-    `agent="GrowThriveScale Process Map Generator" type="device" ` +
-    `data-skill-version="${esc(manifest.version)}">` +
-    `<diagram name="${esc(graph.processName)}">${model}</diagram></mxfile>`
-  );
+  const name = (graph as Partial<Page>).name ?? graph.processName;
+  return `<diagram name="${esc(name)}">${model}</diagram>`;
 }
 
 /** Fixed exit/entry connection points derived from the router's endpoints. */

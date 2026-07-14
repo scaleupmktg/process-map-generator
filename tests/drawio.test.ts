@@ -2,7 +2,8 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { loadBundledSkill } from "@/lib/skill/load";
-import { layout } from "@/lib/engine/layout";
+import { layout, layoutPages } from "@/lib/engine/layout";
+import { repairModel } from "@/lib/model/repair";
 import { renderDrawio } from "@/lib/engine/drawio";
 import { renderSvg } from "@/lib/engine/svg";
 import { validateDrawio } from "@/lib/engine/validateDrawio";
@@ -39,6 +40,25 @@ describe("renderDrawio — structure", () => {
     expect(xml).toContain(`data-skill-version="${skill.manifest.version}"`);
     expect(xml).toContain(`v${skill.manifest.version}`);
     expect(xml).toContain(skill.style.branding.footer);
+  });
+
+  it("multi-page: emits one <diagram> tab per page and validates", () => {
+    const model = repairModel(load("xpr-phased"), { maxPhases: 8 });
+    const pages = layoutPages(model, skill);
+    expect(pages.length).toBeGreaterThan(1);
+    const xml = renderDrawio(pages, skill);
+    expect(() => validateDrawio(xml)).not.toThrow();
+    expect((xml.match(/<diagram /g) ?? []).length).toBe(pages.length);
+    expect(xml).toContain('name="Overview"');
+    expect(xml).toContain('name="Invoicing"');
+  });
+
+  it("single-page output is unchanged whether passed a graph or a one-page array", () => {
+    const g = layout(load("approval-flow"), skill);
+    const pages = layoutPages(load("approval-flow"), skill);
+    expect(renderDrawio(pages, skill, { generatedAt: "x" })).toBe(
+      renderDrawio(g, skill, { generatedAt: "x" }),
+    );
   });
 
   it("is deterministic given a fixed generatedAt", () => {

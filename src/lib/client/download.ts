@@ -1,6 +1,6 @@
 import type { ProcessModel } from "@/lib/model/schema";
 import type { ClientSkill } from "@/lib/skill/schema";
-import { layout } from "@/lib/engine/layout";
+import { layoutPages } from "@/lib/engine/layout";
 import { renderDrawio } from "@/lib/engine/drawio";
 import { outputFilenames } from "@/lib/engine/slug";
 
@@ -18,7 +18,9 @@ function saveBlob(filename: string, blob: Blob): void {
 }
 
 export function downloadDrawio(model: ProcessModel, skill: ClientSkill): void {
-  const xml = renderDrawio(layout(model, skill), skill, {
+  // layoutPages → a single page for most processes, or an overview + per-phase
+  // pages (drawio tabs) for a large decomposed one.
+  const xml = renderDrawio(layoutPages(model, skill), skill, {
     generatedAt: new Date().toISOString().slice(0, 19),
   });
   saveBlob(
