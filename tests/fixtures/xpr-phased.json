@@ -1,0 +1,48 @@
+{
+  "processName": "XPR Marketing Expense Process",
+  "orgUnit": "Marketing",
+  "startEvent": "Start",
+  "lanes": ["Requestor", "Traffic Team", "EMEA VA", "Approvers", "Ariba", "Global Procurement", "Vendor", "UK Payables"],
+  "tasks": [
+    { "id": "T1", "name": "Submit marketing request", "lane": "Requestor", "system": "Workfront", "document": null, "next": "T2" },
+    { "id": "T2", "name": "Validate request details", "lane": "Traffic Team", "system": "Outlook", "document": null, "next": null },
+    { "id": "T3", "name": "Set status to Awaiting Feedback", "lane": "Traffic Team", "system": "Workfront", "document": null, "next": null },
+    { "id": "T4", "name": "Check vendor in UK Ariba", "lane": "Traffic Team", "system": "UK Ariba", "document": null, "next": null },
+    { "id": "T5", "name": "Complete VAQ and get PERF ID", "lane": "Requestor", "system": null, "document": "VAQ", "next": "T6" },
+    { "id": "T6", "name": "Set up vendor in UK Ariba", "lane": "EMEA VA", "system": "UK Ariba", "document": null, "next": "T7" },
+    { "id": "T7", "name": "Open non-catalog request", "lane": "Traffic Team", "system": "UK Ariba", "document": null, "next": "T8" },
+    { "id": "T8", "name": "Add GL codes and vendor docs", "lane": "Traffic Team", "system": "UK Ariba", "document": null, "next": "T9" },
+    { "id": "T9", "name": "Submit and record XPR number", "lane": "Traffic Team", "system": "Workfront", "document": null, "next": "T10" },
+    { "id": "T10", "name": "Review and approve XPR", "lane": "Approvers", "system": "UK Ariba", "document": null, "next": null },
+    { "id": "T11", "name": "Print XPO and notify requestor", "lane": "Traffic Team", "system": "Workfront", "document": "XPO", "next": null },
+    { "id": "T12", "name": "Email vendor ANID to procurement", "lane": "Global Procurement", "system": "UK Ariba", "document": null, "next": "T13" },
+    { "id": "T13", "name": "Confirm vendor email update", "lane": "EMEA VA", "system": null, "document": null, "next": "T14" },
+    { "id": "T14", "name": "Email invoice to UK Payables", "lane": "Vendor", "system": null, "document": "Invoice", "next": null },
+    { "id": "T15", "name": "Reject invoice and notify Traffic Team", "lane": "UK Payables", "system": null, "document": null, "next": "T16" },
+    { "id": "T16", "name": "Resolve issue and resend invoice", "lane": "Traffic Team", "system": null, "document": null, "next": "T14" },
+    { "id": "T17", "name": "Reconcile invoice and pay", "lane": "UK Payables", "system": "UK Ariba", "document": null, "next": null },
+    { "id": "T18", "name": "Set invoice status to Done", "lane": "Traffic Team", "system": "Workfront", "document": null, "next": null },
+    { "id": "T19", "name": "Amend XPR", "lane": "Traffic Team", "system": null, "document": null, "next": "T7" }
+  ],
+  "decisions": [
+    { "id": "D1", "name": "Information complete?", "lane": "Traffic Team", "from": "T2", "yes": "T4", "no": "T3" },
+    { "id": "D2", "name": "Vendor onboarded?", "lane": "Traffic Team", "from": "T4", "yes": "T7", "no": "T5" },
+    { "id": "D3", "name": "Approved?", "lane": "Approvers", "from": "T10", "yes": "T11", "no": "T7" },
+    { "id": "D4", "name": "Vendor email working?", "lane": "Traffic Team", "from": "T11", "yes": "T14", "no": "T12" },
+    { "id": "D5", "name": "Invoice valid?", "lane": "UK Payables", "from": "T14", "yes": "T17", "no": "T15" },
+    { "id": "D6", "name": "XPO short of invoice?", "lane": "Traffic Team", "from": "T17", "yes": "T19", "no": "T18" }
+  ],
+  "endEvents": [
+    { "id": "E1", "name": "Order paid and closed", "lane": "Traffic Team", "from": "T18" },
+    { "id": "E2", "name": "Request returned to requestor", "lane": "Requestor", "from": "T3" }
+  ],
+  "phases": [
+    { "id": "P1", "name": "Expense Request", "taskIds": ["T1", "T2", "T3"] },
+    { "id": "P2", "name": "Vendor Onboarding", "taskIds": ["T4", "T5", "T6"] },
+    { "id": "P3", "name": "Non-Catalog Request", "taskIds": ["T7", "T8", "T9"] },
+    { "id": "P4", "name": "PO Approval & Issuance", "taskIds": ["T10", "T11", "T12", "T13"] },
+    { "id": "P5", "name": "Invoicing", "taskIds": ["T14", "T15", "T16"] },
+    { "id": "P6", "name": "Payment & Exceptions", "taskIds": ["T17", "T18", "T19"] }
+  ],
+  "notes": ["Inferred phase grouping from the six numbered sections of the source process."]
+}

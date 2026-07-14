@@ -5,6 +5,7 @@
     "startend":   { "fill": "#dae8fc", "text": "#0a2a5e", "stroke": "#6c8ebf" },
     "document":   { "fill": "#dae8fc", "text": "#0a2a5e", "stroke": "#6c8ebf" },
     "offpage":    { "fill": "#fff2cc", "text": "#4a3d00", "stroke": "#d6b656" },
+    "subprocess": { "fill": "#e1d5e7", "text": "#3a2a4d", "stroke": "#9673a6" },
     "laneHeader": { "fill": "#e6e6e6", "text": "#222222", "stroke": "#999999" },
     "tableHeader": { "fill": "#33475b", "text": "#ffffff", "stroke": "#26374a" },
     "laneBody":   { "fill": "#f7f7f7", "text": "#222222", "stroke": "#999999" },
@@ -19,7 +20,8 @@
     "decision": "rhombus;whiteSpace=wrap;html=1;",
     "startend": "rounded=1;arcSize=50;whiteSpace=wrap;html=1;",
     "document": "shape=document;whiteSpace=wrap;html=1;",
-    "offpage": "shape=offPageConnector;whiteSpace=wrap;html=1;"
+    "offpage": "shape=offPageConnector;whiteSpace=wrap;html=1;",
+    "subprocess": "shape=process;whiteSpace=wrap;html=1;"
   },
   "laneStyle": "swimlane;html=1;horizontal=0;startSize=32;container=1;collapsible=0;fontStyle=1;",
   "laneBodyStyle": "rounded=0;html=1;strokeColor=none;pointerEvents=0;",
@@ -32,12 +34,19 @@
     "decision": "Decision",
     "startend": "Start / End",
     "document": "Document / artifact",
-    "offpage": "Handoff / off-page"
+    "offpage": "Continues on another page",
+    "subprocess": "Phase (see its own page)"
   },
   "legendTitle": "Legend",
   "branding": {
     "footer": "Mapped with GrowThriveScale · growthrivescale.com",
     "company": "GrowThriveScale",
     "site": "growthrivescale.com"
+  },
+  "pages": {
+    "overviewName": "Overview",
+    "overviewLane": "Phases",
+    "toPrefix": "To",
+    "fromPrefix": "From"
   }
 }

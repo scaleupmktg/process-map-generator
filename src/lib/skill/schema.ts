@@ -116,6 +116,7 @@ export const StyleSchema = z.object({
     startend: z.string(),
     document: z.string(),
     offpage: z.string(),
+    subprocess: z.string(),
   }),
   laneStyle: z.string(),
   laneBodyStyle: z.string(),
@@ -129,12 +130,20 @@ export const StyleSchema = z.object({
     startend: z.string(),
     document: z.string(),
     offpage: z.string(),
+    subprocess: z.string(),
   }),
   legendTitle: z.string(),
   branding: z.object({
     footer: z.string(),
     company: z.string(),
     site: z.string(),
+  }),
+  // Labels for multi-page decomposition.
+  pages: z.object({
+    overviewName: z.string(),
+    overviewLane: z.string(),
+    toPrefix: z.string(),
+    fromPrefix: z.string(),
   }),
 });
 
@@ -158,4 +167,10 @@ export function toClientSkill(skill: SkillBundle): ClientSkill {
 }
 
 /** The node kinds the layout engine and renderers understand. */
-export type NodeKind = "task" | "decision" | "startend" | "document" | "offpage";
+export type NodeKind =
+  | "task"
+  | "decision"
+  | "startend"
+  | "document"
+  | "offpage"
+  | "subprocess";

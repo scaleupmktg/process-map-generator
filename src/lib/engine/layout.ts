@@ -7,25 +7,17 @@ import type {
   LayoutLane,
   Point,
   PositionedGraph,
+  Page,
   EdgeKind,
 } from "./types";
 
 /**
- * layout(model, skill) — the pure geometry engine (PRD §8). Turns a validated
- * ProcessModel into a fully positioned graph that BOTH renderers (SVG preview +
- * .drawio) consume, so they cannot diverge. Every number comes from
+ * The geometry engine (PRD §8). `layout()` positions a whole model on one page;
+ * `layoutPages()` splits a phased, overflowing model into an overview page plus
+ * one page per phase. Both share `layoutGraph()`, the pure swimlane placer, so
+ * every page is laid out by exactly the same snake/compaction/routing logic and
+ * the SVG preview and .drawio export can never diverge. Every number comes from
  * skill.modeling — nothing is hardcoded.
- *
- * Algorithm:
- *  1. Derive the flow: a start node feeds the entry task; edges come from
- *     task.next, decision.from/yes/no, and endEvent.from.
- *  2. DFS from the start (main path first) assigns a flow sequence.
- *  3. Snake the sequence into a grid: band = ⌊seq/gridColumns⌋, columns run
- *     left→right on even bands and right→left on odd bands.
- *  4. Stack the lanes that are actually used; within each lane, the bands it
- *     occupies are compacted to consecutive rows (keeps the page short).
- *  5. Route orthogonal edges; classify back-edges as loop-backs.
- *  6. Measure against one printable page and emit fit warnings (never fatal).
  */
 
 type NodeInfo = {
@@ -37,24 +29,38 @@ type NodeInfo = {
   document: string | null;
 };
 
+type Succ = Map<string, { to: string; label: string }[]>;
+
+type LayoutGraphInput = {
+  nodes: Map<string, NodeInfo>;
+  succ: Succ;
+  roots: string[]; // DFS seeds, in placement order
+  laneNames: string[];
+  bannerTitle: string;
+  bannerSubtitle: string | null;
+  processName: string;
+  orgUnit: string | null;
+  notes: string[];
+  skill: ClientSkill;
+};
+
 const RIGHT_MARGIN = 40;
 const CHANNEL_GAP = 22; // vertical clearance for loop-back / wrap routing
+const START_ID = "__start__";
 
-export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph {
-  const g = skill.modeling.geometry;
-  const layoutCfg = skill.modeling.layout;
+function addSucc(succ: Succ, from: string, to: string, label = ""): void {
+  const list = succ.get(from) ?? [];
+  list.push({ to, label });
+  succ.set(from, list);
+}
+
+/** Build the node set + adjacency for a whole model (start + tasks + decisions + ends). */
+function buildModelGraph(
+  model: ProcessModel,
+  skill: ClientSkill,
+): { nodes: Map<string, NodeInfo>; succ: Succ; entryId: string } {
   const labels = skill.modeling.labels;
-  const preferredOrientation = layoutCfg.pageOrientation;
-  const gridColumns = Math.max(1, layoutCfg.gridColumns);
-
-  const laneNames = model.lanes;
-  const laneIndexByName = new Map(laneNames.map((n, i) => [n, i]));
-  const resolveLane = (name: string): number =>
-    laneIndexByName.has(name) ? laneIndexByName.get(name)! : 0;
-
-  // ---- collect nodes (v1 emits startend + task + decision) -----------------
   const nodes = new Map<string, NodeInfo>();
-  const START_ID = "__start__";
 
   const targeted = new Set<string>();
   for (const t of model.tasks) if (t.next) targeted.add(t.next);
@@ -62,9 +68,8 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
     targeted.add(d.yes);
     targeted.add(d.no);
   }
-  const entry =
-    model.tasks.find((t) => !targeted.has(t.id)) ?? model.tasks[0];
-  const entryLane = entry ? entry.lane : laneNames[0];
+  const entry = model.tasks.find((t) => !targeted.has(t.id)) ?? model.tasks[0];
+  const entryLane = entry ? entry.lane : model.lanes[0];
 
   nodes.set(START_ID, {
     id: START_ID,
@@ -105,13 +110,10 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
     });
   }
 
-  // ---- adjacency (ordered successors) --------------------------------------
-  const succ = new Map<string, { to: string; label: string }[]>();
+  const succ: Succ = new Map();
   const push = (from: string, to: string, label = "") => {
     if (!nodes.has(to)) return; // drop dangling refs defensively (repair fixes upstream)
-    const list = succ.get(from) ?? [];
-    list.push({ to, label });
-    succ.set(from, list);
+    addSucc(succ, from, to, label);
   };
   if (entry) push(START_ID, entry.id);
   for (const t of model.tasks) {
@@ -125,17 +127,31 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
     for (const e of model.endEvents) if (e.from === d.id) push(d.id, e.id);
   }
 
-  // ---- DFS flow sequence (main path first) ---------------------------------
+  return { nodes, succ, entryId: START_ID };
+}
+
+/** Position an arbitrary node set + adjacency as one swimlane page. */
+function layoutGraph(input: LayoutGraphInput): PositionedGraph {
+  const { nodes, succ, roots, laneNames, skill } = input;
+  const g = skill.modeling.geometry;
+  const layoutCfg = skill.modeling.layout;
+  const preferredOrientation = layoutCfg.pageOrientation;
+  const gridColumns = Math.max(1, layoutCfg.gridColumns);
+
+  const laneIndexByName = new Map(laneNames.map((n, i) => [n, i]));
+  const resolveLane = (name: string): number =>
+    laneIndexByName.has(name) ? laneIndexByName.get(name)! : 0;
+
+  // ---- DFS flow sequence (from each root in order, then any stragglers) -----
   const seqOf = new Map<string, number>();
   const order: string[] = [];
   const visit = (id: string) => {
-    if (seqOf.has(id)) return;
+    if (!nodes.has(id) || seqOf.has(id)) return;
     seqOf.set(id, order.length);
     order.push(id);
     for (const { to } of succ.get(id) ?? []) visit(to);
   };
-  visit(START_ID);
-  // Any node unreached by traversal (shouldn't happen post-repair) is appended.
+  for (const r of roots) visit(r);
   for (const id of nodes.keys()) if (!seqOf.has(id)) visit(id);
 
   // ---- snake grid placement ------------------------------------------------
@@ -156,10 +172,8 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
     if (!laneBands.has(li)) laneBands.set(li, new Set());
     laneBands.get(li)!.add(band);
   }
-  const usedLaneIndices = laneNames
-    .map((_, i) => i)
-    .filter((i) => laneBands.has(i));
-  const laneRowMap = new Map<number, Map<number, number>>(); // laneIdx -> (band -> row)
+  const usedLaneIndices = laneNames.map((_, i) => i).filter((i) => laneBands.has(i));
+  const laneRowMap = new Map<number, Map<number, number>>();
   for (const li of usedLaneIndices) {
     const bands = [...laneBands.get(li)!].sort((a, b) => a - b);
     const m = new Map<number, number>();
@@ -167,7 +181,6 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
     laneRowMap.set(li, m);
   }
 
-  // Max column across all nodes drives lane width.
   let maxCol = 0;
   for (const c of cellOf.values()) maxCol = Math.max(maxCol, c.col);
   const laneW = g.colOffset + maxCol * g.colWidth + g.taskWidth + RIGHT_MARGIN;
@@ -177,8 +190,8 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
   let banner: PositionedGraph["banner"] = null;
   if (layoutCfg.showTitle) {
     banner = {
-      title: model.processName,
-      subtitle: model.orgUnit,
+      title: input.bannerTitle,
+      subtitle: input.bannerSubtitle,
       x: g.leftMargin,
       y: 0,
       w: laneW,
@@ -187,7 +200,7 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
     top = g.bannerHeight + g.bannerGap;
   }
 
-  const newLaneIndex = new Map<number, number>(); // model lane idx -> render idx
+  const newLaneIndex = new Map<number, number>();
   usedLaneIndices.forEach((li, i) => newLaneIndex.set(li, i));
 
   const lanes: LayoutLane[] = [];
@@ -219,7 +232,7 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
         return { w: g.documentWidth, h: g.documentHeight };
       case "offpage":
         return { w: g.offpageWidth, h: g.offpageHeight };
-      default:
+      default: // task, subprocess
         return { w: g.taskWidth, h: g.taskHeight };
     }
   };
@@ -233,7 +246,6 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
     const { band, col } = cellOf.get(info.id)!;
     const row = laneRowMap.get(modelLane)!.get(band)!;
     const { w, h } = sizeOf(info.kind);
-    // Centre each node within the reference column cell (taskWidth x taskHeight).
     const laneX = g.colOffset + col * g.colWidth + (g.taskWidth - w) / 2;
     const laneY = g.rowTopPad + row * g.rowHeight + (g.taskHeight - h) / 2;
     const x = lane.x + laneX;
@@ -291,9 +303,15 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
 
   // ---- legend --------------------------------------------------------------
   const kindsPresent: NodeKind[] = [];
-  for (const n of layoutNodes)
-    if (!kindsPresent.includes(n.kind)) kindsPresent.push(n.kind);
-  const legendOrder: NodeKind[] = ["task", "decision", "startend", "document", "offpage"];
+  for (const n of layoutNodes) if (!kindsPresent.includes(n.kind)) kindsPresent.push(n.kind);
+  const legendOrder: NodeKind[] = [
+    "task",
+    "decision",
+    "startend",
+    "document",
+    "offpage",
+    "subprocess",
+  ];
   const legendKinds = legendOrder.filter((k) => kindsPresent.includes(k));
 
   const belowRowY = lanesBottom + 14;
@@ -309,8 +327,6 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
       gap: 8,
     };
   }
-  // Footer shares the legend's baseline (right-aligned) so the common case fits
-  // one page; it drops to its own row when there is no legend.
   const footer = {
     text: skill.style.branding.footer,
     x: g.leftMargin,
@@ -320,10 +336,6 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
   };
 
   // ---- choose orientation, then fit check ---------------------------------
-  // Placement is orientation-independent (gridColumns is fixed), so we measure
-  // the content, then pick the page that best contains it: keep the preferred
-  // orientation when it fits, else flip to the other if THAT fits (helps tall,
-  // narrow diagrams), else keep the preferred and warn.
   const contentWidth = g.leftMargin + laneW;
   const contentHeight = belowRowY + belowRowH;
   const fitsIn = (o: "landscape" | "portrait") =>
@@ -352,9 +364,9 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
   }
 
   return {
-    processName: model.processName,
-    orgUnit: model.orgUnit,
-    notes: model.notes,
+    processName: input.processName,
+    orgUnit: input.orgUnit,
+    notes: input.notes,
     skillVersion: skill.manifest.version,
     page: { orientation, width: page.width, height: page.height },
     banner,
@@ -384,7 +396,6 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
     const tRight: Point = { x: t.x + t.w, y: t.cy };
 
     if (kind === "loopback") {
-      // Route around the outside of the lanes, over the top or under the bottom.
       const overTop = t.laneIndex <= s.laneIndex;
       if (overTop) {
         const y = Math.min(s.y, t.y) - CHANNEL_GAP;
@@ -394,22 +405,16 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
       return [sBot, { x: sBot.x, y }, { x: tBot.x, y }, tBot];
     }
 
-    // forward
     if (Math.abs(t.cy - s.cy) < 1) {
-      // same row — connect horizontally from the facing side (handles reversed
-      // snake bands where forward flow runs right-to-left)
       return t.cx > s.cx ? [sRight, tLeft] : [sLeft, tRight];
     }
     if (t.cx > s.cx + 1) {
-      // to the right, different row — elbow
       const midX = (sRight.x + tLeft.x) / 2;
       return [sRight, { x: midX, y: s.cy }, { x: midX, y: t.cy }, tLeft];
     }
     if (Math.abs(t.cx - s.cx) <= 1) {
-      // straight vertical (same column, different lane/row)
       return t.cy > s.cy ? [sBot, tTop] : [sTop, tBot];
     }
-    // forward but to the left and a different row (snake wrap) — drop then across
     if (t.cy >= s.cy) {
       const midY = (sBot.y + tTop.y) / 2;
       return [sBot, { x: s.cx, y: midY }, { x: t.cx, y: midY }, tTop];
@@ -417,6 +422,192 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
     const midY = (sTop.y + tBot.y) / 2;
     return [sTop, { x: s.cx, y: midY }, { x: t.cx, y: midY }, tBot];
   }
+}
+
+/** Position a whole model on a single page (unchanged behaviour). */
+export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph {
+  const { nodes, succ, entryId } = buildModelGraph(model, skill);
+  return layoutGraph({
+    nodes,
+    succ,
+    roots: [entryId],
+    laneNames: model.lanes,
+    bannerTitle: model.processName,
+    bannerSubtitle: model.orgUnit,
+    processName: model.processName,
+    orgUnit: model.orgUnit,
+    notes: model.notes,
+    skill,
+  });
+}
+
+/**
+ * Position a model as one or more pages. A model with fewer than two phases, or
+ * one that already fits a single page, is returned as a single page (identical
+ * to `layout()`). Otherwise it becomes an Overview page (phases in sequence) plus
+ * one page per phase; edges that cross a page boundary become paired off-page
+ * connectors ("To <phase>" on the source page, "From <phase>" on the target).
+ */
+export function layoutPages(model: ProcessModel, skill: ClientSkill): Page[] {
+  const single = layout(model, skill);
+  const phases = model.phases ?? [];
+  const decompose = skill.modeling.layout.decomposePages;
+  if (!decompose || phases.length < 2 || single.fitWarnings.length === 0) {
+    return [{ ...single, name: model.processName, kind: "single", pageId: "main" }];
+  }
+
+  const labels = skill.modeling.labels;
+  const pageCfg = skill.style.pages;
+  const { nodes, succ, entryId } = buildModelGraph(model, skill);
+
+  // Global flow order — used to place a page's roots in the right sequence.
+  const globalSeq = new Map<string, number>();
+  {
+    let n = 0;
+    const visit = (id: string) => {
+      if (!nodes.has(id) || globalSeq.has(id)) return;
+      globalSeq.set(id, n++);
+      for (const { to } of succ.get(id) ?? []) visit(to);
+    };
+    visit(entryId);
+    for (const id of nodes.keys()) if (!globalSeq.has(id)) visit(id);
+  }
+
+  // Which page (phase) each node belongs to.
+  const phaseIndex = new Map(phases.map((p, i) => [p.id, i]));
+  const taskPhase = new Map<string, string>();
+  for (const p of phases) for (const id of p.taskIds) taskPhase.set(id, p.id);
+  const phaseCache = new Map<string, string>();
+  const phaseOf = (id: string, seen: Set<string> = new Set()): string => {
+    const cached = phaseCache.get(id);
+    if (cached) return cached;
+    if (seen.has(id)) return phases[0].id;
+    seen.add(id);
+    let res: string;
+    if (taskPhase.has(id)) res = taskPhase.get(id)!;
+    else if (id === START_ID) res = phases[0].id;
+    else {
+      const d = model.decisions.find((x) => x.id === id);
+      const e = model.endEvents.find((x) => x.id === id);
+      res = d ? phaseOf(d.from, seen) : e ? phaseOf(e.from, seen) : phases[0].id;
+    }
+    phaseCache.set(id, res);
+    return res;
+  };
+  const phaseName = (nodeId: string) => phases[phaseIndex.get(phaseOf(nodeId))!].name;
+
+  const pages: Page[] = [];
+
+  // ---- overview page -------------------------------------------------------
+  {
+    const ovLane = pageCfg.overviewLane;
+    const onodes = new Map<string, NodeInfo>();
+    const osucc: Succ = new Map();
+    const mk = (id: string, kind: NodeKind, label: string) =>
+      onodes.set(id, {
+        id,
+        kind,
+        label: truncateLabel(label, labels.maxLabelChars),
+        lane: ovLane,
+        system: null,
+        document: null,
+      });
+    mk("__ov_start__", "startend", model.startEvent || "Start");
+    let prev = "__ov_start__";
+    for (const p of phases) {
+      const id = `__ovp_${p.id}`;
+      mk(id, "subprocess", p.name);
+      addSucc(osucc, prev, id);
+      prev = id;
+    }
+    mk("__ov_end__", "startend", "End");
+    addSucc(osucc, prev, "__ov_end__");
+    const overview = layoutGraph({
+      nodes: onodes,
+      succ: osucc,
+      roots: ["__ov_start__"],
+      laneNames: [ovLane],
+      bannerTitle: model.processName,
+      bannerSubtitle: pageCfg.overviewName,
+      processName: model.processName,
+      orgUnit: model.orgUnit,
+      notes: model.notes,
+      skill,
+    });
+    pages.push({ ...overview, name: pageCfg.overviewName, kind: "overview", pageId: "overview" });
+  }
+
+  // ---- one page per phase --------------------------------------------------
+  for (const phase of phases) {
+    const pid = phase.id;
+    const onPage = (id: string) => phaseOf(id) === pid;
+    const pnodes = new Map<string, NodeInfo>();
+    for (const [id, info] of nodes) if (onPage(id)) pnodes.set(id, info);
+
+    const psucc: Succ = new Map();
+    let ci = 0;
+    for (const [u, list] of succ) {
+      for (const { to: v, label } of list) {
+        const uOn = onPage(u);
+        const vOn = onPage(v);
+        if (uOn && vOn) {
+          addSucc(psucc, u, v, label);
+        } else if (uOn) {
+          const oc = `__oc_${pid}_${ci++}`;
+          pnodes.set(oc, {
+            id: oc,
+            kind: "offpage",
+            label: truncateLabel(`${pageCfg.toPrefix} ${phaseName(v)}`, labels.maxLabelChars),
+            lane: nodes.get(u)!.lane,
+            system: null,
+            document: null,
+          });
+          addSucc(psucc, u, oc, label);
+        } else if (vOn) {
+          const ic = `__ic_${pid}_${ci++}`;
+          pnodes.set(ic, {
+            id: ic,
+            kind: "offpage",
+            label: truncateLabel(`${pageCfg.fromPrefix} ${phaseName(u)}`, labels.maxLabelChars),
+            lane: nodes.get(v)!.lane,
+            system: null,
+            document: null,
+          });
+          addSucc(psucc, ic, v, label);
+        }
+      }
+    }
+
+    // Roots = page-local sources, ordered by global flow position.
+    const indeg = new Map<string, number>();
+    for (const id of pnodes.keys()) indeg.set(id, 0);
+    for (const [, list] of psucc) for (const { to } of list) indeg.set(to, (indeg.get(to) ?? 0) + 1);
+    const rootKey = (id: string): number => {
+      if (globalSeq.has(id)) return globalSeq.get(id)!;
+      const first = psucc.get(id)?.[0]?.to;
+      return first && globalSeq.has(first) ? globalSeq.get(first)! - 0.5 : -1;
+    };
+    let roots = [...pnodes.keys()]
+      .filter((id) => (indeg.get(id) ?? 0) === 0)
+      .sort((a, b) => rootKey(a) - rootKey(b));
+    if (roots.length === 0) roots = [...pnodes.keys()].slice(0, 1);
+
+    const page = layoutGraph({
+      nodes: pnodes,
+      succ: psucc,
+      roots,
+      laneNames: model.lanes,
+      bannerTitle: phase.name,
+      bannerSubtitle: model.processName,
+      processName: model.processName,
+      orgUnit: model.orgUnit,
+      notes: [],
+      skill,
+    });
+    pages.push({ ...page, name: phase.name, kind: "phase", pageId: pid });
+  }
+
+  return pages;
 }
 
 function polylineMidpoint(points: Point[]): Point {

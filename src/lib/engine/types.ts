@@ -84,3 +84,10 @@ export type PositionedGraph = {
   viewBox: { width: number; height: number };
   fitWarnings: string[];
 };
+
+/** A positioned graph plus its identity within a (possibly multi-page) map. */
+export type Page = PositionedGraph & {
+  name: string;
+  kind: "single" | "overview" | "phase";
+  pageId: string;
+};

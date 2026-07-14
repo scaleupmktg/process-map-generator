@@ -146,6 +146,16 @@ function shapeFor(n: LayoutNode, kind: NodeKind, fill: string, stroke: string): 
       h / 2,
     )}" ry="${num(h / 2)}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`;
   }
+  if (kind === "subprocess") {
+    // Predefined-process look: a rectangle with two vertical bars.
+    const bar = Math.min(10, w * 0.08);
+    return (
+      `<rect x="${num(x)}" y="${num(y)}" width="${num(w)}" height="${num(h)}" rx="4" ` +
+      `fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>` +
+      `<line x1="${num(x + bar)}" y1="${num(y)}" x2="${num(x + bar)}" y2="${num(y + h)}" stroke="${stroke}"/>` +
+      `<line x1="${num(x + w - bar)}" y1="${num(y)}" x2="${num(x + w - bar)}" y2="${num(y + h)}" stroke="${stroke}"/>`
+    );
+  }
   // task / document / offpage → rounded rect
   return `<rect x="${num(x)}" y="${num(y)}" width="${num(w)}" height="${num(
     h,
