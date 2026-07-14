@@ -44,8 +44,7 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
   const g = skill.modeling.geometry;
   const layoutCfg = skill.modeling.layout;
   const labels = skill.modeling.labels;
-  const orientation = layoutCfg.pageOrientation;
-  const page = g.pages[orientation];
+  const preferredOrientation = layoutCfg.pageOrientation;
   const gridColumns = Math.max(1, layoutCfg.gridColumns);
 
   const laneNames = model.lanes;
@@ -320,9 +319,22 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
     h: belowRowH,
   };
 
-  // ---- fit check -----------------------------------------------------------
+  // ---- choose orientation, then fit check ---------------------------------
+  // Placement is orientation-independent (gridColumns is fixed), so we measure
+  // the content, then pick the page that best contains it: keep the preferred
+  // orientation when it fits, else flip to the other if THAT fits (helps tall,
+  // narrow diagrams), else keep the preferred and warn.
   const contentWidth = g.leftMargin + laneW;
   const contentHeight = belowRowY + belowRowH;
+  const fitsIn = (o: "landscape" | "portrait") =>
+    contentWidth <= g.pages[o].width && contentHeight <= g.pages[o].height;
+  const alt = preferredOrientation === "landscape" ? "portrait" : "landscape";
+  const orientation = fitsIn(preferredOrientation)
+    ? preferredOrientation
+    : fitsIn(alt)
+      ? alt
+      : preferredOrientation;
+  const page = g.pages[orientation];
   const fitWarnings: string[] = [];
   if (contentWidth > page.width) {
     fitWarnings.push(

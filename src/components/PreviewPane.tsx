@@ -16,6 +16,7 @@ export default function PreviewPane({
         {/* eslint-disable-next-line @next/next/no-img-element -- inert data-URI SVG; next/image can't optimise it */}
         <img
           src={dataUri}
+          className="mx-auto h-auto max-w-full"
           alt={`Swimlane process map for ${processName}. The extraction summary is the full text alternative.`}
         />
       </div>
