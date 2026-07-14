@@ -12,8 +12,12 @@ export class NoModelError extends Error {
   }
 }
 
-const DEFAULT_MODEL = "claude-haiku-4-5-20251001";
-const MAX_TOKENS = 3000;
+const DEFAULT_MODEL = "claude-sonnet-5";
+// Sonnet 5 emits a thinking block before its text answer, and thinking counts
+// against max_tokens. A full 35-task model needs ~5k text tokens plus thinking,
+// so budget generously — too small a limit truncates the JSON to empty and the
+// extraction fails. (Haiku, which does not think, comfortably fits this too.)
+const MAX_TOKENS = 24000;
 
 /**
  * Choose the extraction backend:
@@ -43,14 +47,24 @@ function realLLM(apiKey: string): LLM {
     const res = await client.messages.create({
       model,
       max_tokens: MAX_TOKENS,
-      temperature: 0,
+      // temperature is intentionally omitted: the newest models (Sonnet 5,
+      // Opus 4.8, …) deprecate it, and JSON-only + schema validation give us the
+      // determinism we need without it.
       system,
       messages: [{ role: "user", content: user }],
     });
-    return res.content
+    const out = res.content
       .filter((b): b is Anthropic.TextBlock => b.type === "text")
       .map((b) => b.text)
       .join("");
+    if (process.env.PMG_DEBUG_EXTRACT === "1") {
+      console.error(
+        `[llm] model=${model} stop=${res.stop_reason} ` +
+          `blocks=${res.content.map((b) => b.type).join(",")} textLen=${out.length} ` +
+          `out=${res.usage.output_tokens}`,
+      );
+    }
+    return out;
   };
 }
 

@@ -1,9 +1,9 @@
 {
   "caps": {
-    "maxLanes": 5,
-    "maxTasks": 20,
-    "maxDecisions": 6,
-    "maxEndEvents": 3,
+    "maxLanes": 8,
+    "maxTasks": 35,
+    "maxDecisions": 12,
+    "maxEndEvents": 5,
     "minInputChars": 40,
     "maxInputChars": 6000
   },

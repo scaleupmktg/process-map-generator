@@ -32,8 +32,8 @@ describe("loadBundledSkill", () => {
   it("reads and validates the committed /skill copy", async () => {
     const skill = await loadBundledSkill();
     expect(() => SkillBundleSchema.parse(skill)).not.toThrow();
-    expect(skill.manifest.version).toBe("1.0.0");
-    expect(skill.modeling.caps.maxTasks).toBe(20);
+    expect(skill.manifest.version).toBe("1.1.0");
+    expect(skill.modeling.caps.maxTasks).toBe(35);
     expect(skill.style.palette.task.fill).toMatch(/^#/);
     expect(skill.extraction.length).toBeGreaterThan(200);
   });
@@ -53,7 +53,7 @@ describe("loadSkill remote override + fail-safe fallback", () => {
   it("returns the bundled copy when no SKILL_BUNDLE_URL is configured", async () => {
     const { impl, state } = stubFetch({ json: () => remote });
     const skill = await loadSkill({ bundleUrl: null, fetchImpl: impl });
-    expect(skill.manifest.version).toBe("1.0.0");
+    expect(skill.manifest.version).toBe(bundled.manifest.version);
     expect(state.calls).toBe(0);
   });
 
@@ -90,7 +90,7 @@ describe("loadSkill remote override + fail-safe fallback", () => {
       bundleUrl: "https://example.com/bundle.json",
       fetchImpl: impl,
     });
-    expect(skill.manifest.version).toBe("1.0.0");
+    expect(skill.manifest.version).toBe(bundled.manifest.version);
   });
 
   it("falls back to the bundled copy on unparseable JSON", async () => {
@@ -99,7 +99,7 @@ describe("loadSkill remote override + fail-safe fallback", () => {
       bundleUrl: "https://example.com/bundle.json",
       fetchImpl: impl,
     });
-    expect(skill.manifest.version).toBe("1.0.0");
+    expect(skill.manifest.version).toBe(bundled.manifest.version);
   });
 
   it("falls back to the bundled copy on a schema-invalid remote bundle", async () => {
@@ -110,7 +110,7 @@ describe("loadSkill remote override + fail-safe fallback", () => {
       bundleUrl: "https://example.com/bundle.json",
       fetchImpl: impl,
     });
-    expect(skill.manifest.version).toBe("1.0.0");
+    expect(skill.manifest.version).toBe(bundled.manifest.version);
   });
 
   it("negative-caches a failing remote so it is not refetched every call", async () => {
@@ -126,8 +126,8 @@ describe("loadSkill remote override + fail-safe fallback", () => {
     const a = await loadSkill(opts);
     t += 5_000; // +5s, within the 30s negative-cache window
     const b = await loadSkill(opts);
-    expect(a.manifest.version).toBe("1.0.0");
-    expect(b.manifest.version).toBe("1.0.0");
+    expect(a.manifest.version).toBe(bundled.manifest.version);
+    expect(b.manifest.version).toBe(bundled.manifest.version);
     expect(state.calls).toBe(1);
   });
 });
