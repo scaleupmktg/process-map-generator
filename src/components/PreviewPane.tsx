@@ -3,73 +3,81 @@
 import { useState } from "react";
 import type { PreviewPage } from "@/lib/client/preview";
 
+type ThemeOption = { name: string; label: string; swatch: string };
+
 export default function PreviewPane({
   pages,
   processName,
-  themes,
+  themeOptions,
   activeTheme,
   onTheme,
 }: {
   pages: PreviewPage[];
   processName: string;
-  themes: Record<string, { label: string }>;
+  themeOptions: ThemeOption[];
   activeTheme: string;
   onTheme: (name: string) => void;
 }) {
   const [active, setActive] = useState(0);
   const page = pages[Math.min(active, pages.length - 1)];
   const multi = pages.length > 1;
-  const themeNames = Object.keys(themes);
 
   return (
-    <section aria-label="Diagram preview" className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Diagram preview
-        </h3>
-        {themeNames.length > 1 && (
-          <div
-            role="group"
-            aria-label="Colour scheme"
-            className="flex flex-wrap gap-1"
-            title="Pick a colour scheme — the download uses the one you choose."
-          >
-            {themeNames.map((name) => (
+    <section aria-label="Diagram preview" className="flex flex-col gap-3">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        Diagram preview
+      </h3>
+
+      {/* Colour scheme picker */}
+      {themeOptions.length > 1 && (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+          <span className="text-xs font-semibold text-slate-600">Colour scheme:</span>
+          <div role="group" aria-label="Colour scheme" className="flex flex-wrap gap-1.5">
+            {themeOptions.map((t) => (
               <button
-                key={name}
+                key={t.name}
                 type="button"
-                aria-pressed={name === activeTheme}
-                onClick={() => onTheme(name)}
-                className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                  name === activeTheme
-                    ? "bg-emerald-600 text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                aria-pressed={t.name === activeTheme}
+                onClick={() => onTheme(t.name)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                  t.name === activeTheme
+                    ? "border-emerald-600 bg-emerald-600 text-white"
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                 }`}
               >
-                {themes[name].label}
+                <span
+                  aria-hidden
+                  className="h-2.5 w-2.5 rounded-full border border-black/20"
+                  style={{ backgroundColor: t.swatch }}
+                />
+                {t.label}
               </button>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
+      {/* Page tabs (multi-page maps only) */}
       {multi && (
-        <div role="tablist" aria-label="Pages" className="flex flex-wrap gap-1.5">
-          {pages.map((p, i) => (
-            <button
-              key={p.name + i}
-              role="tab"
-              aria-selected={i === active}
-              onClick={() => setActive(i)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                i === active
-                  ? "bg-slate-900 text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}
-            >
-              {p.name}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-t border-slate-100 pt-2.5">
+          <span className="text-xs font-semibold text-slate-600">Page:</span>
+          <div role="tablist" aria-label="Pages" className="flex flex-wrap gap-1.5">
+            {pages.map((p, i) => (
+              <button
+                key={p.name + i}
+                role="tab"
+                aria-selected={i === active}
+                onClick={() => setActive(i)}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                  i === active
+                    ? "bg-slate-900 text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -87,8 +95,8 @@ export default function PreviewPane({
       </div>
       <p className="text-xs text-slate-400">
         {multi
-          ? "Each page is a tab in the downloaded .drawio, in the colour scheme you pick above."
-          : "The download uses the colour scheme you pick above, and matches this preview exactly."}
+          ? "Each page is a tab in the downloaded .drawio, in the colour scheme you pick."
+          : "The download uses the colour scheme you pick, and matches this preview exactly."}
       </p>
     </section>
   );

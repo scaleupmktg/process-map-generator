@@ -71,6 +71,17 @@ export default function ProcessMapApp({
     () => (model && skill ? buildPreview(model, skill, activeTheme) : null),
     [model, skill, activeTheme],
   );
+  const themeOptions = useMemo(
+    () =>
+      skill
+        ? Object.entries(skill.style.themes).map(([name, t]) => ({
+            name,
+            label: t.label,
+            swatch: t.palette.task.fill,
+          }))
+        : [],
+    [skill],
+  );
 
   // Stamp the skill version on funnel events once we have it (PRD §15).
   const sv = () => (skill ? { skillVersion: skill.manifest.version } : {});
@@ -241,7 +252,7 @@ export default function ProcessMapApp({
             <PreviewPane
               pages={pages}
               processName={model.processName}
-              themes={skill.style.themes}
+              themeOptions={themeOptions}
               activeTheme={activeTheme ?? ""}
               onTheme={setTheme}
             />

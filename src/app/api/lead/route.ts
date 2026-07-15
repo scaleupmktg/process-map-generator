@@ -39,12 +39,14 @@ async function timedFetch(
   }
 }
 
+type SinkResult = { configured: boolean; ok: boolean; status?: number; error?: string };
+
 /** Create one Airtable record. Never throws. Field names must match the table. */
-async function toAirtable(lead: LeadPayload): Promise<boolean> {
+async function toAirtable(lead: LeadPayload): Promise<SinkResult> {
   const key = process.env.AIRTABLE_API_KEY;
   const base = process.env.AIRTABLE_BASE_ID;
   const table = process.env.AIRTABLE_TABLE_NAME;
-  if (!key || !base || !table) return false;
+  if (!key || !base || !table) return { configured: false, ok: false };
 
   const res = await timedFetch(
     `https://api.airtable.com/v0/${base}/${encodeURIComponent(table)}`,
@@ -68,27 +70,27 @@ async function toAirtable(lead: LeadPayload): Promise<boolean> {
     },
   );
 
-  if (res?.ok) return true;
+  if (res?.ok) return { configured: true, ok: true, status: res.status };
   if (res) {
-    const detail = await res.text().catch(() => "");
-    console.error(`[/api/lead] Airtable ${res.status}: ${detail}`.slice(0, 400));
-  } else {
-    console.error("[/api/lead] Airtable request failed or timed out");
+    const detail = (await res.text().catch(() => "")).slice(0, 300);
+    console.error(`[/api/lead] Airtable ${res.status}: ${detail}`);
+    return { configured: true, ok: false, status: res.status, error: detail };
   }
-  return false;
+  console.error("[/api/lead] Airtable request failed or timed out");
+  return { configured: true, ok: false, error: "request failed or timed out" };
 }
 
 /** Forward to a generic webhook (Resend / CRM / Make). Never throws. */
-async function toWebhook(lead: LeadPayload): Promise<boolean> {
+async function toWebhook(lead: LeadPayload): Promise<SinkResult> {
   const webhook = process.env.LEAD_WEBHOOK_URL;
-  if (!webhook) return false;
+  if (!webhook) return { configured: false, ok: false };
   const res = await timedFetch(webhook, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(lead),
   });
   if (!res?.ok) console.error("[/api/lead] webhook delivery failed");
-  return Boolean(res?.ok);
+  return { configured: true, ok: Boolean(res?.ok), status: res?.status };
 }
 
 export async function POST(req: Request) {
@@ -118,11 +120,16 @@ export async function POST(req: Request) {
 
   // Deliver to every configured sink; NEVER fail the user's download on delivery.
   const [airtable, webhook] = await Promise.all([toAirtable(lead), toWebhook(lead)]);
-  if (!airtable && !webhook) {
+  if (!airtable.configured && !webhook.configured) {
     console.info(
       `[/api/lead] captured ${email} (no AIRTABLE_* or LEAD_WEBHOOK_URL configured)`,
     );
   }
 
-  return NextResponse.json({ ok: true });
+  // Opt-in diagnostics (?debug=1): surface why a sink rejected the record, for
+  // setup/troubleshooting. Reveals config-level errors only, never user data.
+  const debug = new URL(req.url).searchParams.get("debug") === "1";
+  return NextResponse.json(
+    debug ? { ok: true, delivery: { airtable, webhook } } : { ok: true },
+  );
 }

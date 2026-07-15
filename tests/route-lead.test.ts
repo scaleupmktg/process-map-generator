@@ -109,6 +109,27 @@ describe("POST /api/lead", () => {
     expect((opts as RequestInit).body).not.toContain("SECRET");
   });
 
+  it("?debug=1 surfaces the Airtable rejection detail for troubleshooting", async () => {
+    process.env.AIRTABLE_API_KEY = "patTEST";
+    process.env.AIRTABLE_BASE_ID = "appTEST";
+    process.env.AIRTABLE_TABLE_NAME = "Leads";
+    delete process.env.LEAD_WEBHOOK_URL;
+    fetchMock.mockResolvedValueOnce(
+      new Response('{"error":{"type":"UNKNOWN_FIELD_NAME","message":"Unknown field name: Process Name"}}', {
+        status: 422,
+      }),
+    );
+    const req = new Request("http://localhost/api/lead?debug=1", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(LEAD),
+    });
+    const json = await (await POST(req)).json();
+    expect(json.ok).toBe(true);
+    expect(json.delivery.airtable).toMatchObject({ configured: true, ok: false, status: 422 });
+    expect(json.delivery.airtable.error).toContain("UNKNOWN_FIELD_NAME");
+  });
+
   it("returns 200 even if Airtable rejects the record", async () => {
     process.env.AIRTABLE_API_KEY = "patTEST";
     process.env.AIRTABLE_BASE_ID = "appTEST";
