@@ -65,9 +65,11 @@ export default function ProcessMapApp({
     }
   }, []);
 
+  const [theme, setTheme] = useState<string | null>(null);
+  const activeTheme = theme ?? skill?.style.defaultTheme;
   const pages = useMemo(
-    () => (model && skill ? buildPreview(model, skill) : null),
-    [model, skill],
+    () => (model && skill ? buildPreview(model, skill, activeTheme) : null),
+    [model, skill, activeTheme],
   );
 
   // Stamp the skill version on funnel events once we have it (PRD §15).
@@ -127,8 +129,12 @@ export default function ProcessMapApp({
     setDownloadBusy(kind);
     try {
       if (kind === "drawio") {
-        downloadDrawio(model, skill);
-        trackClient("download_drawio", { processName: model.processName, ...sv() });
+        downloadDrawio(model, skill, activeTheme);
+        trackClient("download_drawio", {
+          processName: model.processName,
+          theme: activeTheme,
+          ...sv(),
+        });
       } else {
         await downloadXlsx(model, skill, bookingUrl);
         trackClient("download_xlsx", { processName: model.processName, ...sv() });
@@ -208,7 +214,7 @@ export default function ProcessMapApp({
 
       {stage === "loading" && <ProgressStages />}
 
-      {stage === "result" && model && pages && (
+      {stage === "result" && model && skill && pages && (
         <div className="flex flex-col gap-8">
           {isMock && (
             <Banner tone="error">
@@ -232,7 +238,13 @@ export default function ProcessMapApp({
 
           <div className="grid grid-cols-1 gap-8 min-[900px]:grid-cols-2">
             <SummaryPanel model={model} onEdit={() => setStage("input")} />
-            <PreviewPane pages={pages} processName={model.processName} />
+            <PreviewPane
+              pages={pages}
+              processName={model.processName}
+              themes={skill.style.themes}
+              activeTheme={activeTheme ?? ""}
+              onTheme={setTheme}
+            />
           </div>
 
           <div className="flex flex-col gap-3">

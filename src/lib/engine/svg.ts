@@ -1,6 +1,6 @@
-import type { ClientSkill, NodeKind } from "@/lib/skill/schema";
+import type { ClientSkill, NodeKind, PaletteColors } from "@/lib/skill/schema";
 import type { LayoutNode, PositionedGraph } from "./types";
-import { esc, num } from "./style";
+import { esc, num, paletteFor } from "./style";
 import { wrapText, truncateLabel } from "./text";
 
 /**
@@ -9,11 +9,15 @@ import { wrapText, truncateLabel } from "./text";
  * construction (PRD §8). The SVG is inert (no scripts), so LLM-derived labels
  * can't execute; the extraction summary panel is its text alternative.
  */
-export function renderSvg(graph: PositionedGraph, skill: ClientSkill): string {
+export function renderSvg(
+  graph: PositionedGraph,
+  skill: ClientSkill,
+  theme?: string,
+): string {
   const { style, modeling } = skill;
   const t = modeling.type;
   const g = modeling.geometry;
-  const pal = style.palette;
+  const pal = paletteFor(style, theme);
   const parts: string[] = [];
 
   const W = num(graph.viewBox.width);
@@ -96,7 +100,7 @@ export function renderSvg(graph: PositionedGraph, skill: ClientSkill): string {
   }
 
   // ---- nodes (on top) ------------------------------------------------------
-  for (const n of graph.nodes) parts.push(renderNode(n, skill));
+  for (const n of graph.nodes) parts.push(renderNode(n, skill, pal));
 
   // ---- legend --------------------------------------------------------------
   if (graph.legend) {
@@ -162,10 +166,10 @@ function shapeFor(n: LayoutNode, kind: NodeKind, fill: string, stroke: string): 
   )}" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`;
 }
 
-function renderNode(n: LayoutNode, skill: ClientSkill): string {
-  const { style, modeling } = skill;
+function renderNode(n: LayoutNode, skill: ClientSkill, pal: PaletteColors): string {
+  const { modeling } = skill;
   const t = modeling.type;
-  const c = style.palette[n.kind];
+  const c = pal[n.kind];
   const out: string[] = [shapeFor(n, n.kind, c.fill, c.stroke)];
 
   const innerW = (n.kind === "decision" ? n.w * 0.62 : n.w - 16);

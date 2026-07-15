@@ -17,11 +17,16 @@ function saveBlob(filename: string, blob: Blob): void {
   setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
-export function downloadDrawio(model: ProcessModel, skill: ClientSkill): void {
+export function downloadDrawio(
+  model: ProcessModel,
+  skill: ClientSkill,
+  theme?: string,
+): void {
   // layoutPages → a single page for most processes, or an overview + per-phase
   // pages (drawio tabs) for a large decomposed one.
   const xml = renderDrawio(layoutPages(model, skill), skill, {
     generatedAt: new Date().toISOString().slice(0, 19),
+    theme,
   });
   saveBlob(
     outputFilenames(model.processName).drawio,

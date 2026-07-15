@@ -19,9 +19,13 @@ export type PreviewPage = {
  * as an inert data URI (no script execution from LLM-derived labels) and shares
  * geometry with the .drawio export.
  */
-export function buildPreview(model: ProcessModel, skill: ClientSkill): PreviewPage[] {
+export function buildPreview(
+  model: ProcessModel,
+  skill: ClientSkill,
+  theme?: string,
+): PreviewPage[] {
   return layoutPages(model, skill).map((page) => {
-    const svg = renderSvg(page, skill);
+    const svg = renderSvg(page, skill, theme);
     return {
       name: page.name,
       kind: page.kind,

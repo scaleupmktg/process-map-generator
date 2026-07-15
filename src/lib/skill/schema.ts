@@ -14,6 +14,26 @@ const ColorTriple = z.object({
   stroke: z.string(),
 });
 
+/** The diagram colours a renderer reads (one per selectable theme). */
+const DiagramPalette = z.object({
+  task: ColorTriple,
+  decision: ColorTriple,
+  startend: ColorTriple,
+  document: ColorTriple,
+  offpage: ColorTriple,
+  subprocess: ColorTriple,
+  laneHeader: ColorTriple,
+  laneBody: ColorTriple,
+  title: ColorTriple,
+  legend: ColorTriple,
+  footer: ColorTriple,
+  edge: ColorTriple,
+  canvas: ColorTriple,
+});
+export type PaletteColors = z.infer<typeof DiagramPalette>;
+
+const ThemeSchema = z.object({ label: z.string(), palette: DiagramPalette });
+
 const PageSize = z.object({
   width: z.number().positive(),
   height: z.number().positive(),
@@ -98,6 +118,7 @@ export const StyleSchema = z.object({
       startend: ColorTriple,
       document: ColorTriple,
       offpage: ColorTriple,
+      subprocess: ColorTriple,
       laneHeader: ColorTriple,
       tableHeader: ColorTriple,
       laneBody: ColorTriple,
@@ -145,6 +166,13 @@ export const StyleSchema = z.object({
     toPrefix: z.string(),
     fromPrefix: z.string(),
   }),
+  // Selectable colour schemes for the diagram (preview + .drawio export). The
+  // top-level `palette` above is the default/muted scheme and drives the Excel
+  // register; these drive the diagram and the on-screen theme toggle.
+  defaultTheme: z.string(),
+  themes: z
+    .object({ muted: ThemeSchema, corporate: ThemeSchema, bold: ThemeSchema })
+    .catchall(ThemeSchema),
 });
 
 export const SkillBundleSchema = z.object({

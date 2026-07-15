@@ -1,6 +1,6 @@
 import type { ClientSkill } from "@/lib/skill/schema";
 import type { LayoutNode, PositionedGraph, Page } from "./types";
-import { esc, num, clamp01, drawioNodeStyle } from "./style";
+import { esc, num, clamp01, drawioNodeStyle, paletteFor } from "./style";
 
 /**
  * renderDrawio(graph, skill) — serialise the positioned graph to an
@@ -17,11 +17,11 @@ import { esc, num, clamp01, drawioNodeStyle } from "./style";
 export function renderDrawio(
   input: PositionedGraph | PositionedGraph[],
   skill: ClientSkill,
-  opts: { generatedAt?: string } = {},
+  opts: { generatedAt?: string; theme?: string } = {},
 ): string {
   const pages = Array.isArray(input) ? input : [input];
   const generatedAt = opts.generatedAt ?? skill.manifest.updated;
-  const diagrams = pages.map((p) => renderDiagram(p, skill)).join("");
+  const diagrams = pages.map((p) => renderDiagram(p, skill, opts.theme)).join("");
   return (
     `<mxfile host="app.diagrams.net" modified="${esc(generatedAt)}" ` +
     `agent="GrowThriveScale Process Map Generator" type="device" ` +
@@ -30,10 +30,11 @@ export function renderDrawio(
 }
 
 /** Serialise one positioned page to an <diagram> element. */
-function renderDiagram(graph: PositionedGraph, skill: ClientSkill): string {
+function renderDiagram(graph: PositionedGraph, skill: ClientSkill, theme?: string): string {
   const { style, modeling } = skill;
   const t = modeling.type;
   const g = modeling.geometry;
+  const pal = paletteFor(style, theme);
 
   const nodeById = new Map(graph.nodes.map((n) => [n.id, n]));
   const cells: string[] = ['<mxCell id="0"/>', '<mxCell id="1" parent="0"/>'];
@@ -56,7 +57,7 @@ function renderDiagram(graph: PositionedGraph, skill: ClientSkill): string {
 
   // ---- title banner --------------------------------------------------------
   if (graph.banner) {
-    const c = style.palette.title;
+    const c = pal.title;
     const bStyle =
       `${style.titleStyle}fillColor=${c.fill};fontColor=${c.text};strokeColor=${c.stroke};` +
       `fontFamily=${t.fontFamily};fontSize=${t.titleFontPt};`;
@@ -78,8 +79,8 @@ function renderDiagram(graph: PositionedGraph, skill: ClientSkill): string {
   }
 
   // ---- lanes (+ neutral body overlay) --------------------------------------
-  const laneHdr = style.palette.laneHeader;
-  const laneBody = style.palette.laneBody;
+  const laneHdr = pal.laneHeader;
+  const laneBody = pal.laneBody;
   const laneStyle =
     `${style.laneStyle}fillColor=${laneHdr.fill};fontColor=${laneHdr.text};` +
     `strokeColor=${laneHdr.stroke};fontFamily=${t.fontFamily};fontSize=${t.minFontPt};`;
@@ -111,7 +112,7 @@ function renderDiagram(graph: PositionedGraph, skill: ClientSkill): string {
       vertex(
         `n-${n.id}`,
         n.label,
-        drawioNodeStyle(n.kind, skill),
+        drawioNodeStyle(n.kind, skill, theme),
         `lane-${n.laneIndex}`,
         n.laneX,
         n.laneY,
@@ -122,7 +123,7 @@ function renderDiagram(graph: PositionedGraph, skill: ClientSkill): string {
   }
 
   // ---- edges ---------------------------------------------------------------
-  const edge = style.palette.edge;
+  const edge = pal.edge;
   for (const e of graph.edges) {
     const s = nodeById.get(e.from);
     const target = nodeById.get(e.to);
@@ -168,7 +169,7 @@ function renderDiagram(graph: PositionedGraph, skill: ClientSkill): string {
     );
     let lx = lg.x + 60;
     lg.items.forEach((item, i) => {
-      const c = style.palette[item.kind];
+      const c = pal[item.kind];
       cells.push(
         vertex(
           `legend-swatch-${i}`,
@@ -198,7 +199,7 @@ function renderDiagram(graph: PositionedGraph, skill: ClientSkill): string {
   }
 
   // ---- footer (branding + version) -----------------------------------------
-  const footerColor = style.palette.footer;
+  const footerColor = pal.footer;
   cells.push(
     vertex(
       "footer",

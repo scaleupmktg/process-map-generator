@@ -1,9 +1,10 @@
 {
   "name": "process-mapping-drawio",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "schemaVersion": 1,
-  "updated": "2026-07-14",
+  "updated": "2026-07-15",
   "changelog": [
+    "1.3.0 — three selectable colour schemes (muted pastel, clean corporate, bold saturated) for the diagram preview and .drawio export, chosen via an on-screen toggle; the download uses the picked scheme. The Excel register is unchanged.",
     "1.2.0 — multi-page sub-process decomposition: the extraction can group tasks into phases (maxPhases 8), and a phased process that overflows one page renders as an overview page plus one page per phase, so big maps stay readable and printable. Single-page output is unchanged for unphased/small processes.",
     "1.1.0 — raised caps for fuller maps: 8 lanes / 35 tasks / 12 decisions / 5 end events (was 5 / 20 / 6 / 3). Captures multi-role, exception-heavy processes without consolidating lanes; diagrams may span more than one printable page.",
     "1.0.0 — initial v1 bundle: CBOK extraction prompt, muted/hybrid palette (green task, amber decision, slate start/end, blue document), caps 5 lanes / 20 tasks / 6 decisions / 6000 chars, A4 landscape snake layout at Verdana 12."

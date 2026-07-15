@@ -68,16 +68,16 @@ describe("renderDrawio — structure", () => {
     expect(a).toBe(b);
   });
 
-  it("colours come from the skill palette (change palette → change output)", () => {
+  it("colours come from the skill theme palette (change palette → change output)", () => {
     const g = layout(load("linear-onboarding"), skill);
     const before = renderDrawio(g, skill);
-    expect(before).toContain(skill.style.palette.task.fill);
+    expect(before).toContain(skill.style.themes.muted.palette.task.fill);
 
     const edited = structuredClone(skill);
-    edited.style.palette.task.fill = "#123456";
+    edited.style.themes.muted.palette.task.fill = "#123456";
     const after = renderDrawio(layout(load("linear-onboarding"), edited), edited);
     expect(after).toContain("#123456");
-    expect(after).not.toContain(skill.style.palette.task.fill);
+    expect(after).not.toContain(skill.style.themes.muted.palette.task.fill);
   });
 });
 

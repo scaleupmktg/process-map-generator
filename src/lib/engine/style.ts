@@ -1,4 +1,10 @@
-import type { ClientSkill, NodeKind } from "@/lib/skill/schema";
+import type { ClientSkill, NodeKind, PaletteColors } from "@/lib/skill/schema";
+
+/** Resolve the diagram palette for a theme, defaulting to the bundle's default. */
+export function paletteFor(style: ClientSkill["style"], theme?: string): PaletteColors {
+  const chosen = style.themes[theme ?? style.defaultTheme];
+  return chosen ? chosen.palette : style.palette;
+}
 
 /** XML/SVG-safe escaping for attribute and text content. */
 export function esc(value: string): string {
@@ -20,9 +26,9 @@ export function clamp01(n: number): number {
 }
 
 /** Compose the full mxGraph style string for a node kind from the skill bundle. */
-export function drawioNodeStyle(kind: NodeKind, skill: ClientSkill): string {
+export function drawioNodeStyle(kind: NodeKind, skill: ClientSkill, theme?: string): string {
   const { style, modeling } = skill;
-  const c = style.palette[kind];
+  const c = paletteFor(style, theme)[kind];
   const t = modeling.type;
   return (
     `${style.shapes[kind]}` +

@@ -96,6 +96,24 @@ export default function InputPanel({
         </span>
       </div>
 
+      <p className="group relative flex w-fit items-center gap-1.5 text-xs text-slate-500">
+        <span
+          aria-hidden
+          className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-600"
+        >
+          i
+        </span>
+        Messy or complex process?
+        <span
+          role="tooltip"
+          className="pointer-events-none absolute bottom-full left-0 z-10 mb-2 w-72 rounded-lg bg-slate-900 px-3 py-2 text-xs font-normal leading-relaxed text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100"
+        >
+          If your process is complex or a bit disorganised, paste it into ChatGPT or Claude
+          first and ask it to reorganise into clear numbered steps — who does what, in what
+          order, and where the decisions are. You&apos;ll get a much cleaner map.
+        </span>
+      </p>
+
       {uploadNote && <Banner tone="info">{uploadNote}</Banner>}
 
       <div className="flex flex-col gap-2">

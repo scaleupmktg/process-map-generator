@@ -48,5 +48,62 @@
     "overviewLane": "Phases",
     "toPrefix": "To",
     "fromPrefix": "From"
+  },
+  "defaultTheme": "muted",
+  "themes": {
+    "muted": {
+      "label": "Muted pastel",
+      "palette": {
+        "task":       { "fill": "#d5e8d4", "text": "#14351f", "stroke": "#82b366" },
+        "decision":   { "fill": "#ffe6cc", "text": "#663d00", "stroke": "#d79b00" },
+        "startend":   { "fill": "#dae8fc", "text": "#0a2a5e", "stroke": "#6c8ebf" },
+        "document":   { "fill": "#dae8fc", "text": "#0a2a5e", "stroke": "#6c8ebf" },
+        "offpage":    { "fill": "#fff2cc", "text": "#4a3d00", "stroke": "#d6b656" },
+        "subprocess": { "fill": "#e1d5e7", "text": "#3a2a4d", "stroke": "#9673a6" },
+        "laneHeader": { "fill": "#e6e6e6", "text": "#222222", "stroke": "#999999" },
+        "laneBody":   { "fill": "#f7f7f7", "text": "#222222", "stroke": "#999999" },
+        "title":      { "fill": "#f0f0f0", "text": "#222222", "stroke": "#999999" },
+        "legend":     { "fill": "#ffffff", "text": "#333333", "stroke": "#cccccc" },
+        "footer":     { "fill": "none",    "text": "#888888", "stroke": "none" },
+        "edge":       { "fill": "none",    "text": "#333333", "stroke": "#4d4d4d" },
+        "canvas":     { "fill": "#ffffff", "text": "#222222", "stroke": "#999999" }
+      }
+    },
+    "corporate": {
+      "label": "Clean corporate",
+      "palette": {
+        "task":       { "fill": "#ffffff", "text": "#1a1a1a", "stroke": "#8a97a6" },
+        "decision":   { "fill": "#ffffff", "text": "#1a1a1a", "stroke": "#d79b00" },
+        "startend":   { "fill": "#eef1f5", "text": "#1a1a1a", "stroke": "#8a97a6" },
+        "document":   { "fill": "#ffffff", "text": "#1a1a1a", "stroke": "#6c8ebf" },
+        "offpage":    { "fill": "#f5f5f5", "text": "#1a1a1a", "stroke": "#b0b0b0" },
+        "subprocess": { "fill": "#e7ecf2", "text": "#1a1a1a", "stroke": "#8a97a6" },
+        "laneHeader": { "fill": "#33475b", "text": "#ffffff", "stroke": "#26374a" },
+        "laneBody":   { "fill": "#ffffff", "text": "#1a1a1a", "stroke": "#8a97a6" },
+        "title":      { "fill": "#33475b", "text": "#ffffff", "stroke": "#26374a" },
+        "legend":     { "fill": "#ffffff", "text": "#33475b", "stroke": "#cccccc" },
+        "footer":     { "fill": "none",    "text": "#8a97a6", "stroke": "none" },
+        "edge":       { "fill": "none",    "text": "#33475b", "stroke": "#5b7085" },
+        "canvas":     { "fill": "#ffffff", "text": "#1a1a1a", "stroke": "#8a97a6" }
+      }
+    },
+    "bold": {
+      "label": "Bold saturated",
+      "palette": {
+        "task":       { "fill": "#4a86c5", "text": "#ffffff", "stroke": "#2b5c8a" },
+        "decision":   { "fill": "#e8a33d", "text": "#ffffff", "stroke": "#b3791f" },
+        "startend":   { "fill": "#5aa469", "text": "#ffffff", "stroke": "#3d7a4a" },
+        "document":   { "fill": "#7d5ba6", "text": "#ffffff", "stroke": "#5a3f7a" },
+        "offpage":    { "fill": "#e07a5f", "text": "#ffffff", "stroke": "#b3543a" },
+        "subprocess": { "fill": "#8e6fc7", "text": "#ffffff", "stroke": "#5a3f7a" },
+        "laneHeader": { "fill": "#2b3a4a", "text": "#ffffff", "stroke": "#1e2a36" },
+        "laneBody":   { "fill": "#ffffff", "text": "#1a1a1a", "stroke": "#2b3a4a" },
+        "title":      { "fill": "#2b3a4a", "text": "#ffffff", "stroke": "#1e2a36" },
+        "legend":     { "fill": "#ffffff", "text": "#2b3a4a", "stroke": "#cccccc" },
+        "footer":     { "fill": "none",    "text": "#888888", "stroke": "none" },
+        "edge":       { "fill": "none",    "text": "#2b3a4a", "stroke": "#4d4d4d" },
+        "canvas":     { "fill": "#ffffff", "text": "#1a1a1a", "stroke": "#2b3a4a" }
+      }
+    }
   }
 }
