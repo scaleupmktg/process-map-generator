@@ -4,6 +4,7 @@ import type { ProcessModel } from "@/lib/model/schema";
 import type { ClientSkill } from "@/lib/skill/schema";
 import { buildPreview } from "@/lib/client/preview";
 import { downloadDrawio, downloadXlsx } from "@/lib/client/download";
+import { layoutPages } from "@/lib/engine/layout";
 import { trackClient } from "@/lib/client/analytics";
 import { parseFile, FileParseError } from "@/lib/client/parseFile";
 import InputPanel from "./InputPanel";
@@ -67,9 +68,12 @@ export default function ProcessMapApp({
 
   const [theme, setTheme] = useState<string | null>(null);
   const activeTheme = theme ?? skill?.style.defaultTheme;
+  // Layout + connector routing depend only on the model; a theme switch just
+  // re-renders the same geometry in new colours.
+  const layout = useMemo(() => (model && skill ? layoutPages(model, skill) : null), [model, skill]);
   const pages = useMemo(
-    () => (model && skill ? buildPreview(model, skill, activeTheme) : null),
-    [model, skill, activeTheme],
+    () => (layout && skill ? buildPreview(layout, skill, activeTheme) : null),
+    [layout, skill, activeTheme],
   );
   const themeOptions = useMemo(
     () =>
@@ -140,7 +144,7 @@ export default function ProcessMapApp({
     setDownloadBusy(kind);
     try {
       if (kind === "drawio") {
-        downloadDrawio(model, skill, activeTheme);
+        downloadDrawio(model, skill, activeTheme, layout ?? undefined);
         trackClient("download_drawio", {
           processName: model.processName,
           theme: activeTheme,

@@ -80,6 +80,21 @@ export const ModelingSchema = z.object({
     titleFontPt: z.number().positive(),
     smallFontPt: z.number().positive(),
   }),
+  // Connector router tunables (obstacle-aware orthogonal routing).
+  routing: z.object({
+    clearance: z.number().nonnegative(), // px kept between a connector and any shape
+    bendPenalty: z.number().nonnegative(), // cost of one bend, in px of extra length
+    crossingPenalty: z.number().nonnegative(), // cost of crossing another connector
+    overlapPenalty: z.number().nonnegative(), // cost per px of running on another connector
+    nearPenalty: z.number().nonnegative(), // cost per px of running closer than trackSpacing beside another connector
+    hugPenalty: z.number().nonnegative(), // cost per px of running along a shape's clearance line
+    sidePenalty: z.number().nonnegative(), // cost of leaving/entering a side not facing the other end
+    backSidePenalty: z.number().nonnegative(), // …a side facing away from the other end
+    trackSpacing: z.number().positive(), // spacing of parallel tracks in free gutters
+    maxTracks: z.number().int().positive(), // max parallel tracks per gutter
+    portSpacing: z.number().positive(), // spacing between connectors sharing a node side
+    jumpSize: z.number().nonnegative(), // line-jump size where connectors cross (0 = none)
+  }),
   geometry: z.object({
     colWidth: z.number().positive(),
     rowHeight: z.number().positive(),

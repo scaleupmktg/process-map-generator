@@ -10,7 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "skill:check": "tsx scripts/skill-check.ts",
-    "concurrency:test": "tsx scripts/concurrency-test.ts"
+    "concurrency:test": "tsx scripts/concurrency-test.ts",
+    "route:audit": "tsx scripts/route-audit.ts",
+    "render:fixtures": "tsx scripts/render-fixtures.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.111.0",

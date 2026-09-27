@@ -32,7 +32,7 @@ describe("loadBundledSkill", () => {
   it("reads and validates the committed /skill copy", async () => {
     const skill = await loadBundledSkill();
     expect(() => SkillBundleSchema.parse(skill)).not.toThrow();
-    expect(skill.manifest.version).toBe("1.3.0");
+    expect(skill.manifest.version).toBe("1.4.0");
     expect(skill.modeling.caps.maxTasks).toBe(35);
     expect(skill.style.palette.task.fill).toMatch(/^#/);
     expect(skill.extraction.length).toBeGreaterThan(200);

@@ -1,6 +1,6 @@
 import type { ClientSkill } from "@/lib/skill/schema";
 import type { LayoutNode, PositionedGraph, Page } from "./types";
-import { esc, num, clamp01, drawioNodeStyle, paletteFor } from "./style";
+import { EDGE_STROKE_WIDTH, esc, num, frac, clamp01, drawioNodeStyle, paletteFor } from "./style";
 
 /**
  * renderDrawio(graph, skill) — serialise the positioned graph to an
@@ -13,6 +13,14 @@ import { esc, num, clamp01, drawioNodeStyle, paletteFor } from "./style";
  *  - edges live on the root and carry explicit exit/entry anchors + the SAME
  *    absolute waypoints the SVG preview draws, so the two cannot diverge
  *  - the skill version is stamped into the footer text and an <mxfile> attribute
+ *
+ * Edge fidelity: with orthogonalEdgeStyle and waypoints, draw.io hands the edge
+ * to its SegmentConnector, which reproduces the bends exactly as long as the
+ * first/last bend lines up with the fixed port — which the router guarantees.
+ * exitPerimeter=0/entryPerimeter=0 pin the ports to the exact points (no
+ * perimeter projection), so the file draws the router's polyline as-is; the
+ * obstacle avoidance lives in our router, because nothing in a .drawio file
+ * makes draw.io route around other shapes on open.
  */
 export function renderDrawio(
   input: PositionedGraph | PositionedGraph[],
@@ -123,7 +131,10 @@ function renderDiagram(graph: PositionedGraph, skill: ClientSkill, theme?: strin
   }
 
   // ---- edges ---------------------------------------------------------------
+  // Later edges hop over earlier ones where they cross (jumpStyle=arc) — the SVG
+  // preview draws the same hops in the same document order.
   const edge = pal.edge;
+  const jumps = modeling.routing.jumpSize > 0 ? `jumpStyle=arc;jumpSize=${num(modeling.routing.jumpSize)};` : "";
   for (const e of graph.edges) {
     const s = nodeById.get(e.from);
     const target = nodeById.get(e.to);
@@ -133,14 +144,22 @@ function renderDiagram(graph: PositionedGraph, skill: ClientSkill, theme?: strin
     const anchors = edgeAnchors(s, target, first, last);
     const interior = e.points.slice(1, -1);
     const eStyle =
-      `${style.edgeStyle}${anchors}` +
+      `${style.edgeStyle}${anchors}${jumps}` +
+      `strokeWidth=${num(EDGE_STROKE_WIDTH)};endArrow=classic;endSize=6;` +
       `fontFamily=${t.fontFamily};fontSize=${t.smallFontPt};` +
-      `fontColor=${edge.text};strokeColor=${edge.stroke};`;
+      `fontColor=${edge.text};strokeColor=${edge.stroke};labelBackgroundColor=${pal.canvas.fill};`;
     const points = interior.length
       ? `<Array as="points">${interior
           .map((p) => `<mxPoint x="${num(p.x)}" y="${num(p.y)}"/>`)
           .join("")}</Array>`
       : "";
+    // draw.io places an edge label at x ∈ [-1, 1] along the polyline, plus an
+    // absolute offset — the router's labelT / labelOffset map onto that exactly.
+    const offset =
+      e.labelOffset.x || e.labelOffset.y
+        ? `<mxPoint x="${num(e.labelOffset.x)}" y="${num(e.labelOffset.y)}" as="offset"/>`
+        : "";
+    const labelX = e.label ? ` x="${frac(2 * e.labelT - 1)}" y="0"` : "";
     cells.push(
       `<mxCell id="edge-${esc(e.id)}" value="${esc(
         e.label,
@@ -148,7 +167,7 @@ function renderDiagram(graph: PositionedGraph, skill: ClientSkill, theme?: strin
         e.from,
       )}" target="n-${esc(
         e.to,
-      )}"><mxGeometry relative="1" as="geometry">${points}</mxGeometry></mxCell>`,
+      )}"><mxGeometry${labelX} relative="1" as="geometry">${points}${e.label ? offset : ""}</mxGeometry></mxCell>`,
     );
   }
 
@@ -224,7 +243,11 @@ function renderDiagram(graph: PositionedGraph, skill: ClientSkill, theme?: strin
   return `<diagram name="${esc(name)}">${model}</diagram>`;
 }
 
-/** Fixed exit/entry connection points derived from the router's endpoints. */
+/**
+ * Fixed exit/entry connection points derived from the router's endpoints. The
+ * perimeter flags are off so draw.io uses these exact points instead of
+ * projecting them onto the shape outline (which would move them off the bends).
+ */
 function edgeAnchors(
   s: LayoutNode,
   t: LayoutNode,
@@ -236,7 +259,7 @@ function edgeAnchors(
   const entryX = clamp01((last.x - t.x) / t.w);
   const entryY = clamp01((last.y - t.y) / t.h);
   return (
-    `exitX=${num(exitX)};exitY=${num(exitY)};exitDx=0;exitDy=0;` +
-    `entryX=${num(entryX)};entryY=${num(entryY)};entryDx=0;entryDy=0;`
+    `exitX=${frac(exitX)};exitY=${frac(exitY)};exitDx=0;exitDy=0;exitPerimeter=0;` +
+    `entryX=${frac(entryX)};entryY=${frac(entryY)};entryDx=0;entryDy=0;entryPerimeter=0;`
   );
 }

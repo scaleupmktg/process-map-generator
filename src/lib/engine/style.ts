@@ -16,9 +16,17 @@ export function esc(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
+/** Connector line width, shared by the SVG preview and the .drawio edge style. */
+export const EDGE_STROKE_WIDTH = 1.5;
+
 /** Round to 3 decimals and drop trailing zeros — keeps golden files tidy. */
 export function num(n: number): string {
   return String(Math.round(n * 1000) / 1000);
+}
+
+/** Round to 5 decimals — for relative (0–1) values that draw.io scales by a size. */
+export function frac(n: number): string {
+  return String(Math.round(n * 100000) / 100000);
 }
 
 export function clamp01(n: number): number {

@@ -1,9 +1,10 @@
 {
   "name": "process-mapping-drawio",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "schemaVersion": 1,
-  "updated": "2026-07-15",
+  "updated": "2026-09-27",
   "changelog": [
+    "1.4.0 — connectors never cross shapes: an obstacle-aware orthogonal router (A* over an orthogonal visibility grid, with bend / crossing / overlap / spacing costs and a rip-up-and-reroute pass) replaces the fixed elbow routes. Connectors sharing a side get their own ports, labels avoid shapes and lines, and unavoidable crossings get line jumps in both the preview and the .drawio file (identical geometry, verified in draw.io 31.5). Column gutters widen from 30 to 40 px (task 170 px, decision 150 px wide) so parallel connectors stay legible; new modeling.routing tunables.",
     "1.3.0 — three selectable colour schemes (muted pastel, clean corporate, bold saturated) for the diagram preview and .drawio export, chosen via an on-screen toggle; the download uses the picked scheme. The Excel register is unchanged.",
     "1.2.0 — multi-page sub-process decomposition: the extraction can group tasks into phases (maxPhases 8), and a phased process that overflows one page renders as an overview page plus one page per phase, so big maps stay readable and printable. Single-page output is unchanged for unphased/small processes.",
     "1.1.0 — raised caps for fuller maps: 8 lanes / 35 tasks / 12 decisions / 5 end events (was 5 / 20 / 6 / 3). Captures multi-role, exception-heavy processes without consolidating lanes; diagrams may span more than one printable page.",

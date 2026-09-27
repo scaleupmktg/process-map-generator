@@ -3,6 +3,7 @@ import type { ClientSkill } from "@/lib/skill/schema";
 import { layoutPages } from "@/lib/engine/layout";
 import { renderDrawio } from "@/lib/engine/drawio";
 import { outputFilenames } from "@/lib/engine/slug";
+import type { Page } from "@/lib/engine/types";
 
 /** Client-side file downloads. All generation happens in the browser. */
 
@@ -21,10 +22,12 @@ export function downloadDrawio(
   model: ProcessModel,
   skill: ClientSkill,
   theme?: string,
+  layout?: Page[],
 ): void {
   // layoutPages → a single page for most processes, or an overview + per-phase
-  // pages (drawio tabs) for a large decomposed one.
-  const xml = renderDrawio(layoutPages(model, skill), skill, {
+  // pages (drawio tabs) for a large decomposed one. Pass the layout the preview
+  // already computed so the file is byte-for-byte the geometry on screen.
+  const xml = renderDrawio(layout ?? layoutPages(model, skill), skill, {
     generatedAt: new Date().toISOString().slice(0, 19),
     theme,
   });

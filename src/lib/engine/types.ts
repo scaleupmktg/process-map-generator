@@ -32,7 +32,11 @@ export type LayoutEdge = {
   label: string;
   kind: EdgeKind;
   points: Point[]; // absolute orthogonal polyline, shared by SVG + drawio
-  labelPos: Point;
+  labelPos: Point; // label centre (absolute) = point at labelT along the polyline + labelOffset
+  /** Label position as a fraction (0–1) of the polyline's length, plus an absolute
+   *  offset — drawio places edge labels this way, so file and preview match. */
+  labelT: number;
+  labelOffset: Point;
 };
 
 export type LayoutLane = {

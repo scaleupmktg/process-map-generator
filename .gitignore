@@ -43,3 +43,6 @@ next-env.d.ts
 
 # demo output
 /run-output/
+
+# fixture renders (npm run render:fixtures)
+/.render/

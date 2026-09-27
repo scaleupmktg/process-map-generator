@@ -1,6 +1,4 @@
-import type { ProcessModel } from "@/lib/model/schema";
 import type { ClientSkill } from "@/lib/skill/schema";
-import { layoutPages } from "@/lib/engine/layout";
 import { renderSvg } from "@/lib/engine/svg";
 import type { Page } from "@/lib/engine/types";
 
@@ -13,18 +11,20 @@ export type PreviewPage = {
 };
 
 /**
- * Build the on-screen preview from the model + the skill bundle that produced
- * it. Returns one entry per page — a single page for most processes, or an
- * overview + per-phase pages for a large decomposed one. Each SVG is delivered
- * as an inert data URI (no script execution from LLM-derived labels) and shares
- * geometry with the .drawio export.
+ * Build the on-screen preview from the laid-out pages (layoutPages) + the skill
+ * bundle that produced them. One entry per page — a single page for most
+ * processes, or an overview + per-phase pages for a large decomposed one. Each
+ * SVG is delivered as an inert data URI (no script execution from LLM-derived
+ * labels) and shares geometry with the .drawio export. Layout (including
+ * connector routing) is theme-independent, so callers compute it once and only
+ * re-render here when the colour scheme changes.
  */
 export function buildPreview(
-  model: ProcessModel,
+  layout: Page[],
   skill: ClientSkill,
   theme?: string,
 ): PreviewPage[] {
-  return layoutPages(model, skill).map((page) => {
+  return layout.map((page) => {
     const svg = renderSvg(page, skill, theme);
     return {
       name: page.name,

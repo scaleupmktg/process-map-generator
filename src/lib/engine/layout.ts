@@ -1,11 +1,11 @@
 import type { ClientSkill, NodeKind } from "@/lib/skill/schema";
 import type { ProcessModel } from "@/lib/model/schema";
 import { truncateLabel } from "./text";
+import { routeEdges, type EdgeSpec } from "./router";
 import type {
   LayoutNode,
   LayoutEdge,
   LayoutLane,
-  Point,
   PositionedGraph,
   Page,
   EdgeKind,
@@ -42,10 +42,11 @@ type LayoutGraphInput = {
   orgUnit: string | null;
   notes: string[];
   skill: ClientSkill;
+  /** false = place nodes only (fit probe); connectors are left unrouted. */
+  route?: boolean;
 };
 
 const RIGHT_MARGIN = 40;
-const CHANNEL_GAP = 22; // vertical clearance for loop-back / wrap routing
 const START_ID = "__start__";
 
 function addSucc(succ: Succ, from: string, to: string, label = ""): void {
@@ -275,31 +276,44 @@ function layoutGraph(input: LayoutGraphInput): PositionedGraph {
   layoutNodes.sort((a, b) => a.seq - b.seq);
 
   // ---- edges ---------------------------------------------------------------
-  const edges: LayoutEdge[] = [];
-  let edgeSeq = 0;
+  const specs: EdgeSpec[] = [];
   const seen = new Set<string>();
   for (const [from, list] of succ) {
     for (const { to, label } of list) {
       const key = `${from}->${to}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      const s = nodeById.get(from);
-      const t = nodeById.get(to);
-      if (!s || !t) continue;
+      if (!nodeById.has(from) || !nodeById.has(to)) continue;
       const kind: EdgeKind =
         (seqOf.get(to) ?? 0) < (seqOf.get(from) ?? 0) ? "loopback" : "forward";
-      const points = routeEdge(s, t, kind);
-      edges.push({
-        id: `e${++edgeSeq}`,
-        from,
-        to,
-        label,
-        kind,
-        points,
-        labelPos: polylineMidpoint(points),
-      });
+      specs.push({ id: `e${specs.length + 1}`, from, to, label, kind });
     }
   }
+  // Connectors are routed around every shape, inside the lane bodies (clear of
+  // the lane header band) — see router.ts.
+  const routed =
+    input.route === false
+      ? null
+      : routeEdges(
+          layoutNodes,
+          specs,
+          {
+            x0: g.leftMargin + g.laneHeaderBand + 2,
+            y0: top + 2,
+            x1: g.leftMargin + laneW - 2,
+            y1: lanesBottom - 2,
+          },
+          skill.modeling.routing,
+          skill.modeling.type.smallFontPt,
+          lanes.slice(1).map((l) => l.y),
+        );
+  const edges: LayoutEdge[] = specs.map((spec, i) => ({
+    ...spec,
+    points: routed ? routed[i].points : [],
+    labelPos: routed ? routed[i].labelPos : { x: 0, y: 0 },
+    labelT: routed ? routed[i].labelT : 0.5,
+    labelOffset: routed ? routed[i].labelOffset : { x: 0, y: 0 },
+  }));
 
   // ---- legend --------------------------------------------------------------
   const kindsPresent: NodeKind[] = [];
@@ -383,49 +397,14 @@ function layoutGraph(input: LayoutGraphInput): PositionedGraph {
     },
     fitWarnings,
   };
-
-  // ---- orthogonal router ---------------------------------------------------
-  function routeEdge(s: LayoutNode, t: LayoutNode, kind: EdgeKind): Point[] {
-    const sTop: Point = { x: s.cx, y: s.y };
-    const sBot: Point = { x: s.cx, y: s.y + s.h };
-    const sLeft: Point = { x: s.x, y: s.cy };
-    const sRight: Point = { x: s.x + s.w, y: s.cy };
-    const tTop: Point = { x: t.cx, y: t.y };
-    const tBot: Point = { x: t.cx, y: t.y + t.h };
-    const tLeft: Point = { x: t.x, y: t.cy };
-    const tRight: Point = { x: t.x + t.w, y: t.cy };
-
-    if (kind === "loopback") {
-      const overTop = t.laneIndex <= s.laneIndex;
-      if (overTop) {
-        const y = Math.min(s.y, t.y) - CHANNEL_GAP;
-        return [sTop, { x: sTop.x, y }, { x: tTop.x, y }, tTop];
-      }
-      const y = Math.max(s.y + s.h, t.y + t.h) + CHANNEL_GAP;
-      return [sBot, { x: sBot.x, y }, { x: tBot.x, y }, tBot];
-    }
-
-    if (Math.abs(t.cy - s.cy) < 1) {
-      return t.cx > s.cx ? [sRight, tLeft] : [sLeft, tRight];
-    }
-    if (t.cx > s.cx + 1) {
-      const midX = (sRight.x + tLeft.x) / 2;
-      return [sRight, { x: midX, y: s.cy }, { x: midX, y: t.cy }, tLeft];
-    }
-    if (Math.abs(t.cx - s.cx) <= 1) {
-      return t.cy > s.cy ? [sBot, tTop] : [sTop, tBot];
-    }
-    if (t.cy >= s.cy) {
-      const midY = (sBot.y + tTop.y) / 2;
-      return [sBot, { x: s.cx, y: midY }, { x: t.cx, y: midY }, tTop];
-    }
-    const midY = (sTop.y + tBot.y) / 2;
-    return [sTop, { x: s.cx, y: midY }, { x: t.cx, y: midY }, tBot];
-  }
 }
 
 /** Position a whole model on a single page (unchanged behaviour). */
 export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph {
+  return layoutSingle(model, skill, true);
+}
+
+function layoutSingle(model: ProcessModel, skill: ClientSkill, route: boolean): PositionedGraph {
   const { nodes, succ, entryId } = buildModelGraph(model, skill);
   return layoutGraph({
     nodes,
@@ -438,6 +417,7 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
     orgUnit: model.orgUnit,
     notes: model.notes,
     skill,
+    route,
   });
 }
 
@@ -449,10 +429,12 @@ export function layout(model: ProcessModel, skill: ClientSkill): PositionedGraph
  * connectors ("To <phase>" on the source page, "From <phase>" on the target).
  */
 export function layoutPages(model: ProcessModel, skill: ClientSkill): Page[] {
-  const single = layout(model, skill);
+  // Fit depends on node placement only, so probe without routing connectors.
+  const probe = layoutSingle(model, skill, false);
   const phases = model.phases ?? [];
   const decompose = skill.modeling.layout.decomposePages;
-  if (!decompose || phases.length < 2 || single.fitWarnings.length === 0) {
+  if (!decompose || phases.length < 2 || probe.fitWarnings.length === 0) {
+    const single = layout(model, skill);
     return [{ ...single, name: model.processName, kind: "single", pageId: "main" }];
   }
 
@@ -608,28 +590,4 @@ export function layoutPages(model: ProcessModel, skill: ClientSkill): Page[] {
   }
 
   return pages;
-}
-
-function polylineMidpoint(points: Point[]): Point {
-  if (points.length === 0) return { x: 0, y: 0 };
-  if (points.length === 1) return points[0];
-  let total = 0;
-  const segLens: number[] = [];
-  for (let i = 1; i < points.length; i++) {
-    const d = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
-    segLens.push(d);
-    total += d;
-  }
-  let half = total / 2;
-  for (let i = 0; i < segLens.length; i++) {
-    if (half <= segLens[i]) {
-      const ratio = segLens[i] === 0 ? 0 : half / segLens[i];
-      return {
-        x: points[i].x + (points[i + 1].x - points[i].x) * ratio,
-        y: points[i].y + (points[i + 1].y - points[i].y) * ratio,
-      };
-    }
-    half -= segLens[i];
-  }
-  return points[points.length - 1];
 }

@@ -1,7 +1,8 @@
 import type { ClientSkill, NodeKind, PaletteColors } from "@/lib/skill/schema";
 import type { LayoutNode, PositionedGraph } from "./types";
-import { esc, num, paletteFor } from "./style";
+import { EDGE_STROKE_WIDTH, esc, num, paletteFor } from "./style";
 import { wrapText, truncateLabel } from "./text";
+import { edgePathData } from "./edgePath";
 
 /**
  * renderSvg(graph, skill) — the on-screen preview. Draws the SAME absolute
@@ -31,9 +32,11 @@ export function renderSvg(
       `width="${W}" height="${H}" role="img" aria-label="${esc(ariaLabel)}" ` +
       `font-family="${esc(t.fontFamily)}">`,
   );
+  // draw.io's "classic" end arrow at endSize 6 (notched, ~9px once stroked).
   parts.push(
-    `<defs><marker id="pmg-arrow" markerWidth="10" markerHeight="10" refX="7.5" refY="3" ` +
-      `orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,3 L0,6 z" fill="${pal.edge.stroke}"/></marker></defs>`,
+    `<defs><marker id="pmg-arrow" markerWidth="10" markerHeight="10" refX="9" refY="4.5" ` +
+      `orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L9,4.5 L0,9 L2.25,4.5 z" ` +
+      `fill="${pal.edge.stroke}"/></marker></defs>`,
   );
   parts.push(`<rect x="0" y="0" width="${W}" height="${H}" fill="${pal.canvas.fill}"/>`);
 
@@ -79,18 +82,26 @@ export function renderSvg(
   }
 
   // ---- edges (under nodes) -------------------------------------------------
-  for (const e of graph.edges) {
-    const pts = e.points.map((p) => `${num(p.x)},${num(p.y)}`).join(" ");
-    parts.push(
-      `<polyline points="${pts}" fill="none" stroke="${pal.edge.stroke}" stroke-width="1.5" ` +
-        `marker-end="url(#pmg-arrow)"/>`,
+  // Drawn exactly as draw.io draws the exported edges: rounded corners, and a
+  // line jump wherever an edge crosses one that comes before it.
+  const jumpSize = modeling.routing.jumpSize;
+  graph.edges.forEach((e, i) => {
+    const d = edgePathData(
+      e.points,
+      graph.edges.slice(0, i).map((o) => o.points),
+      { jumpSize, strokeWidth: EDGE_STROKE_WIDTH },
     );
+    parts.push(
+      `<path d="${d}" fill="none" stroke="${pal.edge.stroke}" stroke-width="${num(EDGE_STROKE_WIDTH)}" ` +
+        `stroke-linejoin="round" marker-end="url(#pmg-arrow)"/>`,
+    );
+  });
+  for (const e of graph.edges) {
     if (e.label) {
       const lw = e.label.length * t.smallFontPt * 0.62 + 8;
       parts.push(
         `<rect x="${num(e.labelPos.x - lw / 2)}" y="${num(e.labelPos.y - t.smallFontPt * 0.75)}" ` +
-          `width="${num(lw)}" height="${num(t.smallFontPt * 1.5)}" rx="3" fill="${pal.canvas.fill}" ` +
-          `opacity="0.9"/>`,
+          `width="${num(lw)}" height="${num(t.smallFontPt * 1.5)}" rx="3" fill="${pal.canvas.fill}"/>`,
         `<text x="${num(e.labelPos.x)}" y="${num(e.labelPos.y)}" text-anchor="middle" ` +
           `dominant-baseline="central" font-size="${num(t.smallFontPt)}" fill="${pal.edge.text}">${esc(
             e.label,
